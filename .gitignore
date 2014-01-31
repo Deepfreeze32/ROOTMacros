@@ -1,13 +1,10 @@
-# Compiled Object files
-*.slo
-*.lo
-*.o
+# Special files
+*.cpp
+*.txt
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
+#Temp files
+~*
+*~
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
+#OS Files
+.DS_Store
