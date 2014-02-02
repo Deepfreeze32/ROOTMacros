@@ -32,13 +32,20 @@ void Cramer_mp1() {
 	tg2->Draw("P");
 	tg1->Fit(tf1);
 	tg2->Fit(tf2);
+	
+	TLegend leg ( . 1 , . 7 , . 3 , . 9 , "Gaussian Paramters") ;
+	leg.SetFillColor(0);
+	leg.AddEntry("");
 
 	//PROBLEM 2
 	c2 = new TCanvas("c2", "2.2", 800,400);
 	//c2->cd();
 	th1 = new TH1F("th1", "Histogram", (Int_t)60, (Double_t)9.0, (Double_t)15.0);
 	th2 = new TH1F("th2", "Histogram", (Int_t)60, (Double_t)9.0, (Double_t)15.0);
-
+	
+	th3 = new TH1F("th3", "Histogram", 60, 9.0, 15.0);
+	th4 = new TH1F("th4", "Histogram", 60, 9.0, 15.0);
+	
 	th1->Eval(tf1);
 	th2->Eval(tf2);
 
@@ -48,36 +55,20 @@ void Cramer_mp1() {
 	float p1 = 2.0/3.0;
 	float p2 = 1.0/3.0;
 
-	float * w1 = new Double_t[60];
-	float * w2 = new Double_t[60];
-	float * pw = new Double_t[60];
-	float * x2 = new Double_t[60];
 	//cout << "Beginning first iteration" << endl;
 	for (int i = 0; i <= th1->GetNbinsX(); i++) {
-		w1[i] = th1->GetBinContent(i);
-		w2[i] = th2->GetBinContent(i);
+		float ev = th1->GetBinContent(i)*p1+th2->GetBinContent(i)*p2;
+		th3->SetBinContent(i, (th1->GetBinContent(i)*p1)/ev);
+		th4->SetBinContent(i, (th2->GetBinContent(i)*p2)/ev);
 		//pw[i] = (w1[i]*p1)+(w2[i]*p2);
-		x2[i] = th1->GetBinCenter(i);
+		//x2[i] = th1->GetBinCenter(i);
 	}
-	//cout << "Ending first iteration" << endl;
 	
-	//cout << "Beginning second iteration" << endl;
-	for (int i = 0; i <= th1->GetNbinsX(); i++) {
-		w1[i] = (w1[i]*p1);//pw[i];
-		w2[i] = (w2[i]*p2);//pw[i];
-	}
-	//cout << "Ending second iteration" << endl;
-
-	tg3 = new TGraph(60,x2,w1);
-	tg3->SetMarkerColor(kBlack);
-	tg3->SetMarkerStyle(20);
-	tg4 = new TGraph(60,x2,w2);
-	tg4->SetMarkerColor(kRed);
-	tg4->SetMarkerStyle(20);
-
-	tg3->Draw("P");
-	tg4->Draw("P");
-
+	th3->SetLineColor(kBlack);
+	th3->Draw("C");
+	th4->SetLineColor(kRed);
+	th4->Draw("CSAME");
+	
 	//Problem 3
 	//c3 = new TCanvas("c3", "2.3", 800,400);
 
