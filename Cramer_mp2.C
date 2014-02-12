@@ -2,7 +2,7 @@
 //Pattern Recognition
 // Travis Cramer
 
-void Cramer_mp1() {
+void Cramer_mp2() {
 	float x1[] = {9, 10, 10.7, 11, 11.5, 12, 13, 14, 15}; 
 	float y1[] = {0, 0.08, 0.24, .21, 0.15, .18, .30, .17, .05}; 
  	float y2[] = {0.03, .14, .27, .33, .36, .3, .18, .04, 0}; 
