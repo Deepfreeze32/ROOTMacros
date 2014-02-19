@@ -32,13 +32,11 @@ void Cramer_mp2() {
 	for (int i = 0; i < SIZE; i++) {
 		mu1[0] += x1[i] / SIZE;
 		mu1[1] += y1[i] / SIZE;
-		if (N == 3)
-			mu1[2] += z1[i] / SIZE;
+		mu1[2] += z1[i] / SIZE;
 
 		mu2[0] += x2[i] / SIZE;
 		mu2[1] += y2[i] / SIZE;
-		if (N == 3)
-			mu2[2] += z2[i] / SIZE;
+		mu2[2] += z2[i] / SIZE;
 	}
 
 	//Print for reference
@@ -140,39 +138,65 @@ void Cramer_mp2() {
     tf3 = new TF2("tf3","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
     tf4 = new TF2("tf4","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
 	        
-    TMatrix W1(N,N);
-    TMatrix W2(N,N);
+    TMatrix W1(2,2);
+    TMatrix W2(2,2);
 
-    TMatrix siginv1(N,N);
-    TMatrix siginv2(N,N);
+    TMatrix siginv1(2,2);
+    TMatrix siginv2(2,2);
 
-    siginv1 = sig1;
-    siginv2 = sig2;
+    TMatrix sigma1(2,2);
+    TMatrix sigma2(2,2);
+    
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
+            sigma1[i][j] = sig1[i][j];
+            sigma2[i][j] = sig2[i][j];
+        }
+    }
+    
+    siginv1 = sigma1;
+    siginv2 = sigma2;
     siginv1.Invert();
     siginv2.Invert();
 
     W1 = -0.5*siginv1;
     W2 = -0.5*siginv2;
 
-    TMatrix w1(N,1);
-    TMatrix w2(N,1);
+    TMatrix w1(2,1);
+    TMatrix w2(2,1);
 
-    w1 = (siginv1*mu1);
-    w2 = (siginv2*mu2);
+    TMatrix mean1(2,1);
+    TMatrix mean2(2,1);
+    
+    for (int i = 0; i < 2; i++) {
+        mean1[i] = mu1[i];
+        mean2[i] = mu2[i];
+    }
+    
+    w1 = (siginv1*mean1);
+    w2 = (siginv2*mean2);
 
+    W1.Print();
+    W2.Print();
+    
+    w1.Print();
+    w2.Print();
+    
     TMatrix m(1,1);
-
+    
+    TMatrix trans(1,2);
+    
     //Calculate first parameter for class 1.
-    t.Transpose(mu1);
-    m = t*w1;
-
-    double w10 = (1.0/SIZE)*(m[0][0])-(1.0/SIZE)*log(sig1.Determinant())+log(0.5);
+    trans.Transpose(mean1);
+    m = trans*w1;
+    
+    double w10 = -0.5*(m[0][0])-0.5*log(sigma1.Determinant())+log(0.5);
 
     //Calculate first parameter for class 2.
-	t.Transpose(mu2);
-    m = t*w2;
+    trans.Transpose(mean2);
+    m = trans*w2;
 
-    double w20 = (1.0/SIZE)*(m[0][0])-(1.0/SIZE)*log(sig2.Determinant())+log(0.5);
+    double w20 = -0.5*(m[0][0])-0.5*log(sigma2.Determinant())+log(0.5);
 
     //Set parameters into special variables
     double par10 = W1[0][0];
@@ -183,7 +207,7 @@ void Cramer_mp2() {
     double par15 = w1[1][0];
     double par16 = w10;
 
- 	double par20 = W2[0][0];
+    double par20 = W2[0][0];
     double par21 = W2[0][1];
     double par22 = W2[1][0];
     double par23 = W2[1][1];
@@ -194,6 +218,22 @@ void Cramer_mp2() {
     tf3->SetParameters(par10,par11,par12,par13,par14,par15,par16);
     tf4->SetParameters(par20,par21,par22,par23,par24,par25,par26);
 
-    tf3->Draw("colz");
-    tf4->Draw("colzsame");
+    //Error checking
+    tf5 = new TF2("tf5", "tf3-tf4",-9,9,-9,9);
+    tf5->SetTitle("The 2D Dichotomizer");
+    tf5->Draw("colz");
+    wrong = 0;
+    
+    for (int i = 0; i < SIZE; i++) {
+        if (tf5->Eval(x1[i],y1[i]) < 0) {
+            wrong++;
+        }
+        if (tf5->Eval(x2[i],y2[i]) > 0) {
+            wrong++;
+        }
+    }
+    
+    error = (100.0*wrong)/(SIZE*2);
+
+    printf("\nError for 2D: %d%%\n",error);
 }
