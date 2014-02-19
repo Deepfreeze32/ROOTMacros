@@ -1,92 +1,167 @@
-//The first ROOT assignment
+//The Second ROOT assignment
 //Pattern Recognition
-// Travis Cramer
+//Travis Cramer
 
 void Cramer_mp2() {
-	float x1[] = {9, 10, 10.7, 11, 11.5, 12, 13, 14, 15}; 
-	float y1[] = {0, 0.08, 0.24, .21, 0.15, .18, .30, .17, .05}; 
- 	float y2[] = {0.03, .14, .27, .33, .36, .3, .18, .04, 0}; 
+
+	const int SIZE = 10;
+	const int N = 3;
+
+	// class 1 
+	float x1[] = {-5.01, -5.43, 1.08, 0.86, -2.67, 4.94, -2.51, -2.25, 5.56, 1.03}; 
+	float y1[] = {-8.12, -3.48, -5.52, -3.78, 0.63, 3.29, 2.09, -2.13, 2.86, -3.33}; 
+	float z1[] = {-3.68, -3.54, 1.66, -4.11, 7.39, 2.08, -2.59, -6.94, -2.26, 4.33}; 
 	
-	//PROBLEM 1
- 	c1 = new TCanvas("c1", "2.1", 800, 400);
- 	//c1->Divide(2,1);
+	float c1[N][SIZE] = {x1,y1,z1};
 
- 	//First case
-	tg1 = new TGraph(9,x1,y1);
-	tg1->SetMarkerColor(kBlack);
+	// class 2 
+	float x2[] = {-0.91, 1.30, -7.75, -5.47, 6.14, 3.60, 5.37, 7.18, -7.39, -7.50}; 
+	float y2[] = {-0.18, -2.06, -4.54, 0.50, 5.72, 1.26, -4.63, 1.46, 1.17, -6.32}; 
+	float z2[] = {-0.05, -3.53, -0.95, 3.92, -4.85, 4.36, -3.65, -6.66, 6.30, -0.31}; 
+
+	float c2[N][SIZE] = {x2,y2,z2};
+
+	can1 = new TCanvas("can1","Machine Problem 2",1200,400);
+	can1->Divide(3,1);
+
+	//switch to the first display
+	can1->cd(1);
+
+	/*TMatrix x(1,1);
+	TMatrix u(1,1);
+	TMatrix e(1,1);
+
+	e[0][0] = x-u;
+	TMatrix et(1,1);
+	et.Transpose(e);
+	TMatrix sigma(1,1);
+	//Variance
+	sigma[0][0] = 7;
+	TMatrix siginv(1,1);
+	siginv = sigma;
+	siginv.Invert();
+
+	TMatrix res(1,1);
+	res = et*siginv*e;*/
+
+	//Part 1
+	TMatrix mu1(N,1);
+	TMatrix mu2(N,1);
+
+	//Calculuate means
+	for (int i = 0; i < SIZE; i++) {
+		mu1[0] += x1[i] / SIZE;
+		mu1[1] += y1[i] / SIZE;
+		mu1[2] += z1[i] / SIZE;
+
+		mu2[0] += x2[i] / SIZE;
+		mu2[1] += y2[i] / SIZE;
+		mu2[2] += z2[i] / SIZE;
+	}
+
+	//Print for reference
+	mu1.Print();
+	mu2.Print();
+
+	//Covariance matricies
+	TMatrix sig1(N,N);
+	TMatrix sig2(N,N);
+
+	/*//Calculate Covaraince
+	for (int i = 0; i < N; i++) {
+		for (int j = 0; j < N; j++) {
+			for (int k = 0; k < SIZE; k++) {
+				sig1[i][j] = ((c1[i][k]-mu1[i][0])*(c1[j][k]-mu1[j][0]))/SIZE;
+				sig2[i][j] = ((c2[i][k]-mu2[i][0])*(c2[j][k]-mu2[j][0]))/SIZE;
+			}
+		}
+	}*/
+	
+	TMatrix d(N,1);
+	TMatrix t(1,N);
+
+	for (int i = 0; i < N; i++) {
+		d[0][0] = x1[i];
+		d[1][0] = y1[i];
+		d[2][0] = z1[i];
+		sig1 = sig1+(SIZE/100.0)*((d-mu1)*t.Transpose(d-mu1));
+
+		d[0][0] = x2[i];
+		d[1][0] = y2[i];
+		d[2][0] = z2[i];
+		sig2 = sig2+(SIZE/100.0)*((d-mu2)*t.Transpose(d-mu2));
+	}
+
+	//Now plot the data.
+	tg1 = new TGraph(SIZE,x1,y1);
 	tg1->SetMarkerStyle(20);
+	tg1->SetMarkerColor(kBlack);
 
-	//Second case
-	tg2 = new TGraph(9,x1,y2);
+	tg2 = new TGraph(SIZE,x2,y2);
+	tg2->SetMarkerStyle(21);
 	tg2->SetMarkerColor(kRed);
-	tg2->SetMarkerStyle(20);
 
-	tf1 = new TF1("tf1","gaus(0) + gaus(3)", 9, 15);
-	tf1->SetParNames("Amp", "Mean", "Width", "Amp", "Mean", "Width");
-	tf1->SetParameters(.2, 10.5, 0.5, 0.38, 13.01, 0.5);
+	tmg = new TMultiGraph("tmg","Data points!");
 
-	tf2 = new TF1("tf2", "gaus(0) + gaus(3)", 9, 15);
-	tf2->SetParNames("Amp", "Mean", "Width", "Amp", "Mean", "Width");
-	tf2->SetParameters(0.21,10.8,0.75,0.3,13,3);
+	tmg->Add(tg1,"P");
+	tmg->Add(tg2,"P");
 
-	//Draw the data
+	tmg->Draw("A");
+
+	//Part 2
+
+	//Switch display
+	can1->cd(2);
+
+	//Formulas!
+	tf1 = new TF1("tf1","x^2*[0]+x*[1]+[2]",-9,9);
+	tf2 = new TF1("tf2","x^2*[0]+x*[1]+[2]",-9,9);
+
+	//double par12 = -.5*(pow((mu1[0][0]),2)/sig1[0][0]+log(sig1[0][0]))+log(0.5);
+	//double par22 = -.5*(pow((mu2[0][0]),2)/sig2[0][0]+log(sig2[0][0]))+log(0.5);
+
+	//Class 1 parameters
+	double par10 = -0.5/sig1[0][0];
+	double par11 = mu1[0][0]/sig1[0][0];
+	double par12 = -.5*(pow((mu1[0][0]),2)/sig1[0][0]+log(sig1[0][0]))+log(0.5);
+
+	//Class 2 parameters
+	double par20 = -0.5/sig2[0][0];
+	double par21 = mu2[0][0]/sig2[0][0];
+	double par22 = -.5*(pow((mu2[0][0]),2)/sig2[0][0]+log(sig2[0][0]))+log(0.5);
+
+	tf1->SetParameters(par10,par11,par12);
+	tf2->SetParameters(par20,par21,par22);
+
 	tf1->SetLineColor(kBlack);
 	tf2->SetLineColor(kRed);
-	tf2->Draw();
-	tf1->Draw("same");
-	tg1->Draw("P");
-	tg2->Draw("P");
-	tg1->Fit(tf1);
-	tg2->Fit(tf2);
-	
-	//Set title for stuff
-	tf2->SetTitle(".2,10.5,0.5,0.38,13.01,0.5,0.21,10.8,0.75,0.3,13,3");
 
-	//PROBLEM 2
-	c2 = new TCanvas("c2", "2.2", 800,400);
+	tf1->SetTitle("The 1D Dichotomizer");
 
-	th1 = new TH1F("th1", "Histogram", 60, 9.0, 15.0);
-	th2 = new TH1F("th2", "Histogram", 60, 9.0, 15.0);
-	
-	th3 = new TH1F("th3", "Histogram", 60, 9.0, 15.0);
-	th4 = new TH1F("th4", "Histogram", 60, 9.0, 15.0);
-	
-	//Popualte bins
-	th1->Eval(tf1);
-	th2->Eval(tf2);
+	tf1->Draw();
+	tf2->Draw("SAME");
 
-	//priors
-	float p1 = 2.0/3.0;
-	float p2 = 1.0/3.0;
+	//Error
+	int wrong = 0;
 
-	for (int i = 0; i <= th1->GetNbinsX(); i++) {
-		//Calculate Evidence
-		float ev = th1->GetBinContent(i)*p1+th2->GetBinContent(i)*p2;
-		//Set content
-		th3->SetBinContent(i, (th1->GetBinContent(i)*p1)/ev);
-		th4->SetBinContent(i, (th2->GetBinContent(i)*p2)/ev);
-	}
-	
-	//Draw
-	th3->SetLineColor(kBlack);
-	th3->Draw("C");
-	th4->SetLineColor(kRed);
-	th4->Draw("CSAME");
-	
-	//Problem 3
-	c3 = new TCanvas("c3", "2.3", 800,400);
-
-	th5 = new TH1F("th5","Histogram",60,9.0,15.0);
-	th6 = new TH1F("th6","Line Hist",60, 9.0, 15.0);
-
-	for (int i = 0; i <= th1->GetNbinsX(); i++) {
-		th5->SetBinContent(i,(th1->GetBinContent(i)/th2->GetBinContent(i)));
-		th6->SetBinContent(i, p2/p1);
+	for (int i = 0; i < SIZE; i++) {
+		if (tf1->Eval(x1[i])-tf2->Eval(x1[i]) < 0) {
+			wrong++;
+		}
+		if (tf2->Eval(x2[i])-tf1->Eval(x2[i]) < 0) {
+			wrong++;
+		}
 	}
 
-	//Draw our stuff!
-	th6->SetLineColor(kRed);
-	th6->SetLineStyle(7);
-	th6->Draw("C");
-	th5->Draw("CSAME");
+	double error = (100.0*wrong)/(SIZE*2);
+
+	printf("\nError for 1D: %d%%\n",error);
+
+
+	//Part 3
+
+	//Switch display
+	can1->cd(3);
+
+
 }
