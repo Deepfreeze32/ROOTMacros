@@ -11,16 +11,19 @@ void Cramer_mp2() {
 	float x1[] = {-5.01, -5.43, 1.08, 0.86, -2.67, 4.94, -2.51, -2.25, 5.56, 1.03}; 
 	float y1[] = {-8.12, -3.48, -5.52, -3.78, 0.63, 3.29, 2.09, -2.13, 2.86, -3.33}; 
 	float z1[] = {-3.68, -3.54, 1.66, -4.11, 7.39, 2.08, -2.59, -6.94, -2.26, 4.33}; 
-	
-	float c1[N][SIZE] = {x1,y1,z1};
-
+	//if (N == 2)
+		float c1[N][SIZE] = {x1,y1,z1};
+	//else 
+	//	float c1[N][SIZE] = {x1,y1,z1};	
 	// class 2 
 	float x2[] = {-0.91, 1.30, -7.75, -5.47, 6.14, 3.60, 5.37, 7.18, -7.39, -7.50}; 
 	float y2[] = {-0.18, -2.06, -4.54, 0.50, 5.72, 1.26, -4.63, 1.46, 1.17, -6.32}; 
 	float z2[] = {-0.05, -3.53, -0.95, 3.92, -4.85, 4.36, -3.65, -6.66, 6.30, -0.31}; 
 
-	float c2[N][SIZE] = {x2,y2,z2};
-
+	//if (N == 2)
+		float c2[N][SIZE] = {x2,y2,z2};
+	//else
+	//	float c2[N][SIZE] = {x2,y2,z2};
 	can1 = new TCanvas("can1","Machine Problem 2",1200,400);
 	can1->Divide(3,1);
 
@@ -52,11 +55,13 @@ void Cramer_mp2() {
 	for (int i = 0; i < SIZE; i++) {
 		mu1[0] += x1[i] / SIZE;
 		mu1[1] += y1[i] / SIZE;
-		mu1[2] += z1[i] / SIZE;
+		if (N == 3)
+			mu1[2] += z1[i] / SIZE;
 
 		mu2[0] += x2[i] / SIZE;
 		mu2[1] += y2[i] / SIZE;
-		mu2[2] += z2[i] / SIZE;
+		if (N == 3)
+			mu2[2] += z2[i] / SIZE;
 	}
 
 	//Print for reference
@@ -66,8 +71,8 @@ void Cramer_mp2() {
 	//Covariance matricies
 	TMatrix sig1(N,N);
 	TMatrix sig2(N,N);
-
-	/*//Calculate Covaraince
+/*
+	//Calculate Covaraince
 	for (int i = 0; i < N; i++) {
 		for (int j = 0; j < N; j++) {
 			for (int k = 0; k < SIZE; k++) {
@@ -75,23 +80,33 @@ void Cramer_mp2() {
 				sig2[i][j] = ((c2[i][k]-mu2[i][0])*(c2[j][k]-mu2[j][0]))/SIZE;
 			}
 		}
-	}*/
-	
+	}
+*/		
+	//sig1.Print();
+	//sig2.Print();
 	TMatrix d(N,1);
 	TMatrix t(1,N);
 
-	for (int i = 0; i < N; i++) {
+	for (int i = 0; i < SIZE; i++) {
 		d[0][0] = x1[i];
 		d[1][0] = y1[i];
 		d[2][0] = z1[i];
-		sig1 = sig1+(SIZE/100.0)*((d-mu1)*t.Transpose(d-mu1));
+		sig1 = sig1+(1.0/SIZE)*((d-mu1)*t.Transpose(d-mu1));
 
 		d[0][0] = x2[i];
 		d[1][0] = y2[i];
 		d[2][0] = z2[i];
-		sig2 = sig2+(SIZE/100.0)*((d-mu2)*t.Transpose(d-mu2));
+		sig2 = sig2+(1.0/SIZE)*((d-mu2)*t.Transpose(d-mu2));
 	}
+	
+	/*for (int i = 0; i < SIZE; i++) {
+		sig1[0][0] += ((x1[i]-mu1[0][0])*(x1[i]-mu1[0][0]))/SIZE;
+		sig2[0][0] += ((x2[i]-mu2[0][0])*(x2[i]-mu2[0][0]))/SIZE;
+	}*/
 
+	sig1.Print();
+	sig2.Print();
+	
 	//Now plot the data.
 	tg1 = new TGraph(SIZE,x1,y1);
 	tg1->SetMarkerStyle(20);
@@ -110,7 +125,7 @@ void Cramer_mp2() {
 
 	//Part 2
 
-	//Switch display
+	//Switch displa	*/y
 	can1->cd(2);
 
 	//Formulas!
@@ -163,5 +178,8 @@ void Cramer_mp2() {
 	//Switch display
 	can1->cd(3);
 
-
+        tf3 = new TF2("tf3","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
+        tf4 = new TF2("tf4","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
+        
+        
 }
