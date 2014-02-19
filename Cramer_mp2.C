@@ -11,43 +11,20 @@ void Cramer_mp2() {
 	float x1[] = {-5.01, -5.43, 1.08, 0.86, -2.67, 4.94, -2.51, -2.25, 5.56, 1.03}; 
 	float y1[] = {-8.12, -3.48, -5.52, -3.78, 0.63, 3.29, 2.09, -2.13, 2.86, -3.33}; 
 	float z1[] = {-3.68, -3.54, 1.66, -4.11, 7.39, 2.08, -2.59, -6.94, -2.26, 4.33}; 
-	//if (N == 2)
-		float c1[N][SIZE] = {x1,y1,z1};
-	//else 
-	//	float c1[N][SIZE] = {x1,y1,z1};	
-	// class 2 
+	
 	float x2[] = {-0.91, 1.30, -7.75, -5.47, 6.14, 3.60, 5.37, 7.18, -7.39, -7.50}; 
 	float y2[] = {-0.18, -2.06, -4.54, 0.50, 5.72, 1.26, -4.63, 1.46, 1.17, -6.32}; 
 	float z2[] = {-0.05, -3.53, -0.95, 3.92, -4.85, 4.36, -3.65, -6.66, 6.30, -0.31}; 
-
-	//if (N == 2)
-		float c2[N][SIZE] = {x2,y2,z2};
-	//else
-	//	float c2[N][SIZE] = {x2,y2,z2};
+	
 	can1 = new TCanvas("can1","Machine Problem 2",1200,400);
 	can1->Divide(3,1);
 
 	//switch to the first display
 	can1->cd(1);
 
-	/*TMatrix x(1,1);
-	TMatrix u(1,1);
-	TMatrix e(1,1);
-
-	e[0][0] = x-u;
-	TMatrix et(1,1);
-	et.Transpose(e);
-	TMatrix sigma(1,1);
-	//Variance
-	sigma[0][0] = 7;
-	TMatrix siginv(1,1);
-	siginv = sigma;
-	siginv.Invert();
-
-	TMatrix res(1,1);
-	res = et*siginv*e;*/
-
-	//Part 1
+	/////////////////////
+	///////Part 1////////
+	/////////////////////
 	TMatrix mu1(N,1);
 	TMatrix mu2(N,1);
 
@@ -71,19 +48,7 @@ void Cramer_mp2() {
 	//Covariance matricies
 	TMatrix sig1(N,N);
 	TMatrix sig2(N,N);
-/*
-	//Calculate Covaraince
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < N; j++) {
-			for (int k = 0; k < SIZE; k++) {
-				sig1[i][j] = ((c1[i][k]-mu1[i][0])*(c1[j][k]-mu1[j][0]))/SIZE;
-				sig2[i][j] = ((c2[i][k]-mu2[i][0])*(c2[j][k]-mu2[j][0]))/SIZE;
-			}
-		}
-	}
-*/		
-	//sig1.Print();
-	//sig2.Print();
+
 	TMatrix d(N,1);
 	TMatrix t(1,N);
 
@@ -99,11 +64,6 @@ void Cramer_mp2() {
 		sig2 = sig2+(1.0/SIZE)*((d-mu2)*t.Transpose(d-mu2));
 	}
 	
-	/*for (int i = 0; i < SIZE; i++) {
-		sig1[0][0] += ((x1[i]-mu1[0][0])*(x1[i]-mu1[0][0]))/SIZE;
-		sig2[0][0] += ((x2[i]-mu2[0][0])*(x2[i]-mu2[0][0]))/SIZE;
-	}*/
-
 	sig1.Print();
 	sig2.Print();
 	
@@ -123,17 +83,16 @@ void Cramer_mp2() {
 
 	tmg->Draw("A");
 
-	//Part 2
+	/////////////////////////
+	//////////Part 2/////////
+	/////////////////////////
 
-	//Switch displa	*/y
+	//Switch display
 	can1->cd(2);
 
 	//Formulas!
 	tf1 = new TF1("tf1","x^2*[0]+x*[1]+[2]",-9,9);
 	tf2 = new TF1("tf2","x^2*[0]+x*[1]+[2]",-9,9);
-
-	//double par12 = -.5*(pow((mu1[0][0]),2)/sig1[0][0]+log(sig1[0][0]))+log(0.5);
-	//double par22 = -.5*(pow((mu2[0][0]),2)/sig2[0][0]+log(sig2[0][0]))+log(0.5);
 
 	//Class 1 parameters
 	double par10 = -0.5/sig1[0][0];
@@ -156,7 +115,7 @@ void Cramer_mp2() {
 	tf1->Draw();
 	tf2->Draw("SAME");
 
-	//Error
+	//Error Calculation
 	int wrong = 0;
 
 	for (int i = 0; i < SIZE; i++) {
@@ -178,8 +137,63 @@ void Cramer_mp2() {
 	//Switch display
 	can1->cd(3);
 
-        tf3 = new TF2("tf3","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
-        tf4 = new TF2("tf4","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
-        
-        
+    tf3 = new TF2("tf3","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
+    tf4 = new TF2("tf4","x^2*[0]+x*y*[1]+x*y*[2]+y^2*[3]+x*[4]+y*[5]+[6]",-9,9,-9,9);
+	        
+    TMatrix W1(N,N);
+    TMatrix W2(N,N);
+
+    TMatrix siginv1(N,N);
+    TMatrix siginv2(N,N);
+
+    siginv1 = sig1;
+    siginv2 = sig2;
+    siginv1.Invert();
+    siginv2.Invert();
+
+    W1 = -0.5*siginv1;
+    W2 = -0.5*siginv2;
+
+    TMatrix w1(N,1);
+    TMatrix w2(N,1);
+
+    w1 = (siginv1*mu1);
+    w2 = (siginv2*mu2);
+
+    TMatrix m(1,1);
+
+    //Calculate first parameter for class 1.
+    t.Transpose(mu1);
+    m = t*w1;
+
+    double w10 = (1.0/SIZE)*(m[0][0])-(1.0/SIZE)*log(sig1.Determinant())+log(0.5);
+
+    //Calculate first parameter for class 2.
+	t.Transpose(mu2);
+    m = t*w2;
+
+    double w20 = (1.0/SIZE)*(m[0][0])-(1.0/SIZE)*log(sig2.Determinant())+log(0.5);
+
+    //Set parameters into special variables
+    double par10 = W1[0][0];
+    double par11 = W1[0][1];
+    double par12 = W1[1][0];
+    double par13 = W1[1][1];
+    double par14 = w1[0][0];
+    double par15 = w1[1][0];
+    double par16 = w10;
+
+ 	double par20 = W2[0][0];
+    double par21 = W2[0][1];
+    double par22 = W2[1][0];
+    double par23 = W2[1][1];
+    double par24 = w2[0][0];
+    double par25 = w2[1][0];
+    double par26 = w20;
+
+    tf3->SetParameters(par10,par11,par12,par13,par14,par15,par16);
+    tf4->SetParameters(par20,par21,par22,par23,par24,par25,par26);
+
+    tf3->Draw("colz");
+    tf4->Draw("colzsame");
 }
