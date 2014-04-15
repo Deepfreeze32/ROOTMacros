@@ -3,6 +3,7 @@
 //
 // Travis Cramer
 
+//Most variables and functions named in the file Dr. Daugherity gave us.
 class NeuralNetwork {
 private:
 	//node counts
@@ -35,7 +36,7 @@ private:
 	int updateCount;
 
 	//Helper functions
-	InvSqrt(int n);
+	InvSqrt(double n);
 	GradW(int i, int j, double ** w);
 public:
 	NeuralNetwork();
@@ -45,6 +46,9 @@ public:
 	void UpdateWeights();
 	double GetSampleError(double * t);
 	double GetThreshold();
+
+	double Eta();
+	double SetEta(double e);
 
 	double f(double net);
 	double df(double net);
@@ -110,10 +114,55 @@ NeuralNetwork::~NeuralNetwork() {
 	delete x;
 	delete y;
 	delete z;
-	for (int j = 0; j < hid+1) {
+	
+	for (int j = 0; j < hid; j++) {
 		delete []wji[];
 	}
 	delete []wji;
+
+	for (int k = 0; k < out; k++) {
+		delete []wkj[];
+	}
+	delete []wkj;
+
+	for (int j = 0; j < hid; j++) {
+		delete []dwji[];
+	}
+	delete []dwji;
+
+	for (int k = 0; k < out; k++) {
+		delete []dwkj[];
+	}
+	delete []dwkj;
+}
+
+void NeuralNetwork::FeedForward() {
+
+}
+
+void NeuralNetwork::TrainSample(double * t) {
+
+}
+
+void NeuralNetwork::UpdateWeights() {
+
+}
+
+double NeuralNetwork::GetSampleError(double * t) {
+
+}
+
+double NeuralNetwork::GetThreshold() {
+
+}
+
+double NeuralNetwork::Eta() {
+	return eta;
+}
+
+double NeuralNetwork::SetEta(double e) {
+	eta = e;
+	return eta;
 }
 
 double NeuralNetwork::f(double net) {
