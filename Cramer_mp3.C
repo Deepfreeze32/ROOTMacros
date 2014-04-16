@@ -37,8 +37,11 @@ private:
 	int updateCount;
 
 	//Helper functions
-	InvSqrt(double n);
-	GradW(int i, int j, double ** w);
+	double InvSqrt(double n);
+	//GradW(int i, int j, double ** w);
+	void CalcNetJ();
+	void CalcNetK();
+	void BackPropogate();
 public:
 	NeuralNetwork();
 	~NeuralNetwork();
@@ -101,12 +104,17 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 	y = new double[hidden+1];
 	z = new double[output];
 
+	netj = new double[hid-1];
+	netk = new double[out];
+	delj = new double[hid-1];
+	delk = new double[out];
+
 	//Bias
 	x[0] = 1.0;
-	x[0] = 1.0;
+	y[0] = 1.0;
 
-	wji = new double*[hidden+1];
-	for (int j = 0; j < hidden+1; j++) {
+	wji = new double*[hidden];
+	for (int j = 0; j < hidden; j++) {
 		wji[j] = new double[input+1];
 	}
 	
@@ -115,8 +123,8 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 		wkj[k] = new double[hidden+1];
 	}
 	
-	dwji = new double*[hidden+1];
-	for (int j = 0; j < hidden+1; j++) {
+	dwji = new double*[hidden];
+	for (int j = 0; j < hidden; j++) {
 		dwji[j] = new double[input+1];
 	}
 	
@@ -126,7 +134,7 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 	}
 	
 	//initialize weights.
-	for (int j = 0; j < hidden+1; j++) {
+	for (int j = 0; j < hidden; j++) {
 		for (int i = 0; i < input+1; i++) {
 			wji[j][i] = gRandom->Uniform(-InvSqrt(input+1),InvSqrt(input+1));
 		}
@@ -137,6 +145,8 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 			wkj[k][j] = gRandom->Uniform(-InvSqrt(hidden+1), InvSqrt(hidden+1));
 		}
 	}
+
+	eta = 0.1;
 }
 NeuralNetwork::~NeuralNetwork() {
 	//delete memory
@@ -167,11 +177,38 @@ NeuralNetwork::~NeuralNetwork() {
 
 
 void NeuralNetwork::FeedForward() {
+	CalcNetJ();
+	for (int j = 1; j < hid; j++) {
+		y[j] = f(netj[j-1]);
+	}
 
+	CalcNetK();
+	for (int k = 0; k < out; k++) {
+		z[k] = f(netk[k]);
+	}
+}
+
+void NeuralNetwork::BackPropogate() {
+	for (int j = 0; j < hid-1; j++) {
+		double sum = 0;
+		for (int k = 0; k < out; k++) {
+			sum += wkj[k][j]
+		}
+		delj[j] = df(netj[j])*sum;
+	}
+
+	for (int j = 0; j < hid-1; j++) {
+		for (int i = 0; i < in; i++) {
+			dwji[j][i] = eta*x[i]*delj[j];
+		}
+	}
 }
 
 void NeuralNetwork::TrainSample(double * t) {
-
+	BackPropogate();
+	for (int k = 0; k < out; k++) {
+		delk[k] = df(netk[k]);
+	}
 }
 
 void NeuralNetwork::UpdateWeights() {
@@ -186,29 +223,27 @@ double NeuralNetwork::GetThreshold() {
 
 }
 
-double NeuralNetwork::Eta() {
-
 //This is the Fast Inverse Square Root Function. It's magical...
 double NeuralNetwork::InvSqrt(double n) {
 	float number = static_cast<float>(n);
 
 	long i;
-	float x2, y;
+	float x2, y1;
 	const float threehalfs = 1.5F;
  
 	x2 = number * 0.5F;
-	y  = number;
-	i  = * ( long * ) &y;
+	y1  = number;
+	i  = * ( long * ) &y1;
 	i  = 0x5f3759df - ( i >> 1 );
-	y  = * ( float * ) &i;
-	y  = y * ( threehalfs - ( x2 * y * y ) );
+	y1  = * ( float * ) &i;
+	y1  = y1 * ( threehalfs - ( x2 * y1 * y1 ) );
 	
 	double retVal = static_cast<double>(y);
 	
 	return retVal;
 }
 
-double NeuralNetwork::eta() {
+double NeuralNetwork::Eta() {
 
 	return eta;
 }
@@ -225,4 +260,24 @@ double NeuralNetwork::f(double net) {
 
 double NeuralNetwork::df(double net) {
 	return pow(pow(TMath::CosH(net),-1),2);
+}
+
+void NeuralNetwork::CalcNetJ() {
+	for (int j = 0; j < hid-1; j++) {
+		double result = 0;
+		for (int i = 0; i < in; i++) {
+			result = wji[j+1][i]*x[i];
+		}
+		netj[j] = result;
+	}
+}
+
+void NeuralNetwork::CalcNetK() {
+	for (int k = 0; k < out; k++) {
+		double result = 0;
+		for (int j = 0; j < hid; j++) {
+			result = wkj[k][j]*y[j];
+		}
+		netk[k] = result;
+	}
 }
