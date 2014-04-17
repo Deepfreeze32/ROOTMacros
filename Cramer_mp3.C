@@ -6,8 +6,8 @@
 //Most variables and functions named in the file Dr. Daugherity gave us.
 class NeuralNetwork {
 private:
-	const double a = 1.716;
-	const double b = 1.0/3.0;
+	double a;
+	double b;
 	//node counts
 	int in;
 	int hid;
@@ -29,10 +29,10 @@ private:
 	double eta; //Eta is a constant
 
 	//netvalues for training
-	int * netj;
-	int * netk;
-	int * delj;
-	int * delk;
+	double * netj;
+	double * netk;
+	double * delj;
+	double * delk;
 
 	//counters
 	int trainCount;
@@ -42,7 +42,6 @@ private:
 
 	//Helper functions
 	double InvSqrt(double n);
-	//GradW(int i, int j, double ** w);
 	void CalcNetJ();
 	void CalcNetK();
 	void BackPropogateInit();
@@ -67,33 +66,14 @@ public:
 	void PrintWeights();
 
 	void SetInputs(double * inputs);
-	//FeedForward
-
-	//TrainSample(double * t)
-	//calc GradW
-	//trainCount++ 
-
-	//UpdateWeights	
-	//w+GradW
-	//GradW=0
-	//updateCount++
-
-	//GetSampleError(double * t)
-	//assume x
-	//FeedForward
-	//Return J
-
-	//GetThreshold()
-	//return max GradW
-
-	//Does NOT include the Bias. for example, 3 for input means three input neurones plus the bias.
-	//Allocate arrays, set to 0
-	
+	double GetResult();
 };
 
 //Constructor. Give input and hidden node counts WITHOUT bias included. 
 NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 	//set variables
+	a = 1.716;
+	b = 1.0/3.0;
 	in = input + 1;
 	hid = hidden + 1;
 	out = output;
@@ -150,8 +130,8 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 		}
 	}
 
-	//The James bond Eta value!
-	eta = 0.07;
+	//The default
+	eta = 0.1;
 }
 
 //Destructor to free memory.
@@ -166,7 +146,7 @@ NeuralNetwork::~NeuralNetwork() {
 	delete delk;
 	delete delj;
 	
-	for (int j = 0; j < hid; j++) {
+	for (int j = 0; j < hid-1; j++) {
 		delete []wji[];
 	}
 	delete []wji;
@@ -176,7 +156,7 @@ NeuralNetwork::~NeuralNetwork() {
 	}
 	delete []wkj;
 
-	for (int j = 0; j < hid; j++) {
+	for (int j = 0; j < hid-1; j++) {
 		delete []dwji[];
 	}
 	delete []dwji;
@@ -196,18 +176,24 @@ double NeuralNetwork::SetInputs(double * inputs) {
 
 //The feedforward operation. Evaluates the network with current weights.
 void NeuralNetwork::FeedForward() {
+	//Calculate net_J
 	for (int j = 0; j < hid-1; j++) {
 		double result = 0.0;
 		for (int i = 0; i < in; i++) {
 			result += wji[j][i]*x[i];
 		}
+
+		//`cout << "Net J for " << j << " is " << result << endl;
 		netj[j] = result;
 	}
 
+	//Set the values of the hidden nodes
 	for (int j = 1; j < hid; j++) {
+		//cout << "f(netJ) for j " << j << " is " << f(netj[j-1]) << endl;
 		y[j] = f(netj[j-1]);
 	}
 
+	//Calculate net_K
 	for (int k = 0; k < out; k++) {
 		double result = 0.0;
 		for (int j = 0; j < hid; j++) {
@@ -216,6 +202,7 @@ void NeuralNetwork::FeedForward() {
 		netk[k] = result;
 	}
 
+	//Set the values of the Output layer
 	for (int k = 0; k < out; k++) {
 		z[k] = f(netk[k]);
 	}
@@ -223,21 +210,23 @@ void NeuralNetwork::FeedForward() {
 
 //Train a sample for given inputs.
 void NeuralNetwork::TrainSample(double * t, double * inputs) {
+	//Set inputs just in case.
 	SetInputs(inputs);
-	//cout << "\t\nSet inputs\n";
+
+	//FeedForward just because...
 	FeedForward();
-	//cout << "\t\nFed Forward\n";
-	//Compute Delta K
+	//Compute Delta K, sensitivity
 	for (int k = 0; k < out; k++) {
 		delk[k] = df(netk[k])*(t[k]-z[k]);
 	}
-	//Compute Delta W_KJ
+	//Compute Delta W_KJ, the updated weights
 	for (int k = 0; k < out; k++) {
 		for (int j = 0; j < hid; j++) {
 			dwkj[k][j] = eta*delk[k]*y[j];
 		}
 	}
-	//
+
+	//Compute Delta J, sensitivity
 	for (int j = 0; j < hid-1; j++) {
 		double sum = 0.0;
 		for (int k = 0; k < out; k++) {
@@ -245,11 +234,15 @@ void NeuralNetwork::TrainSample(double * t, double * inputs) {
 		}
 		delj[j] = df(netj[j])*sum;
 	}
+
+	//computer Delta W_JI, updated weights
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
 			dwji[j][i] = eta*x[i]*delj[j];
 		}
 	}
+
+	//increment Training counter
 	trainCount++;
 }
 
@@ -268,10 +261,11 @@ void NeuralNetwork::UpdateWeights() {
 		}
 	}
 
+	//increment update counter
 	updateCount++;
 }
 
-//Evaluates J(w)
+//Evaluates J(w) for a training set.
 double NeuralNetwork::GetSampleError(double * t, double * inputs) {
 	SetInputs(inputs);
 	FeedForward();
@@ -283,7 +277,7 @@ double NeuralNetwork::GetSampleError(double * t, double * inputs) {
 	return sum;
 }
 
-//Returns largest weight from dw.
+//Returns largest weight from dw. I think this is what the comment meant?
 double NeuralNetwork::GetThreshold() {
 	double largest = dwji[1][0];
 	for (int j = 0; j < hid-1; j++) {
@@ -305,24 +299,9 @@ double NeuralNetwork::GetThreshold() {
 	return largest;
 }
 
-//This is the Fast Inverse Square Root Function. It's magical...
+//This is the Fast Inverse Square Root Function. Aliased because it's easy to change the emthodolgy that way.
 double NeuralNetwork::InvSqrt(double n) {
-	float number = static_cast<float>(n);
-
-	long i;
-	float x2, y1;
-	const float threehalfs = 1.5F;
- 
-	x2 = number * 0.5F;
-	y1  = number;
-	i  = * ( long * ) &y1;
-	i  = 0x5f3759df - ( i >> 1 );
-	y1  = * ( float * ) &i;
-	y1  = y1 * ( threehalfs - ( x2 * y1 * y1 ) );
-	
-	double retVal = static_cast<double>(y);
-	
-	return retVal;
+	return pow(sqrt(n),-1);
 }
 
 //Getter for eta.
@@ -340,6 +319,7 @@ double NeuralNetwork::SetEta(double e) {
 
 //The activation function
 double NeuralNetwork::f(double net) {
+	//cout << "a: " << a << " b: " << b << " net: " << net << endl;
 	return a*TMath::TanH(b*net);
 }
 
@@ -397,29 +377,91 @@ void NeuralNetwork::PrintNetwork() {
 	}
 }
 
+//Just a hackish way to get the output since z is private
+double NeuralNetwork::GetResult() {
+	return z[0];
+}
+
 //MAIN!!!!
 void Cramer_mp3() {
-	NeuralNetwork nn(2,2,1);
+	NeuralNetwork nn(2,3,1);
 	//cout << "Contructed\n";
-	nn.PrintWeights();
-	//cout << "\n1st Weight Print\n";
-	double inputs [] = {-0.2,0.3};
+	
+	double inputs [] = {-1.0, 1.0};
 	nn.SetInputs(inputs);
 	//cout << "\nSet Inputs\n";
-	nn.FeedForward();
 	cout << "\nFeedForward\n";
+	nn.FeedForward();
+	
+	nn.PrintWeights();
+	//cout << "\n1st Weight Print\n";
 	nn.PrintNetwork();
 	//cout << "\n1st Network Print\n";
 	double train1 [] = {1}; 
-
 	nn.TrainSample(train1,inputs);
-	cout << "\nBackPropogate on 1\n";
 	nn.UpdateWeights();
-	cout << "\nUpdated Weights\n";
+	//Get some random training data!
+	for (int i = 0; i < 50; i++) {
+		double rand1 = 1;
+		//Ensure it's not 0.
+		do {
+			rand1 = gRandom->Uniform(-1,1);
+		} while(rand1 == 0);
+		
+		double rand2 = 1;
+		//Ensure it's not 0.
+		do {
+			rand2 = gRandom->Uniform(-1,1);
+		} while(rand2 == 0);
+		
+		//Calculate the right answer
+		double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
+
+		//Set up arrays for training
+		double inputs1 [] = {rand1,rand2};
+		double train2 [] = {sol1};
+		
+		//Try Online training, update after each attempt.
+		nn.TrainSample(train2,inputs1);
+		nn.UpdateWeights();
+		//nn.TrainSample(train1,inputs);
+		//nn.UpdateWeights();
+	}
+	//cout << "\nBackPropogate on 1\n";
+	
+	//cout << "\nUpdated Weights\n";
+	nn.SetInputs(inputs);
+	nn.FeedForward();
 	nn.PrintWeights();
 	//cout << "\n2nd Weight Print\n";
 	nn.PrintNetwork();
 	//cout << "\n2nd Weight Print\n";
 
+	cout << "Sample Error: " << nn.GetSampleError(inputs,train1) << endl;
+
+	//Error for 1000 samples
+	int right = 0;
+	for (int i = 0; i < 1000; i++) {
+		double rand1 = 1;
+		do {
+			rand1 = gRandom->Uniform(-1,1);
+		} while(rand1 == 0);
+		double rand2 = 1;
+		do {
+			rand2 = gRandom->Uniform(-1,1);
+		} while(rand2 == 0);
+		double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
+		double inputs1 [] = {rand1,rand2};
+		nn.SetInputs(inputs1);
+		nn.FeedForward();
+		if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
+			right++;
+		}
+	}
+	cout << "Right: " << right/10 << "%" << endl;
+	//cout << "Did it converge? " << ((nn.GetResult() > 0)?"Yes!":"No! :(") << endl;
 	cout << "\n--------------------\nDONE WITH PROGRAM!\n--------------------\n";
+
+	//Now do pretty stuff?
+	//th2d1 = new TH2D();
 }
