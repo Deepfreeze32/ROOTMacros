@@ -197,9 +197,9 @@ double NeuralNetwork::SetInputs(double * inputs) {
 //The feedforward operation. Evaluates the network with current weights.
 void NeuralNetwork::FeedForward() {
 	for (int j = 0; j < hid-1; j++) {
-		double result = 0;
+		double result = 0.0;
 		for (int i = 0; i < in; i++) {
-			result = wji[j][i]*x[i];
+			result += wji[j][i]*x[i];
 		}
 		netj[j] = result;
 	}
@@ -209,9 +209,9 @@ void NeuralNetwork::FeedForward() {
 	}
 
 	for (int k = 0; k < out; k++) {
-		double result = 0;
+		double result = 0.0;
 		for (int j = 0; j < hid; j++) {
-			result = wkj[k][j]*y[j];
+			result += wkj[k][j]*y[j];
 		}
 		netk[k] = result;
 	}
@@ -239,7 +239,7 @@ void NeuralNetwork::TrainSample(double * t, double * inputs) {
 	}
 	//
 	for (int j = 0; j < hid-1; j++) {
-		double sum = 0;
+		double sum = 0.0;
 		for (int k = 0; k < out; k++) {
 			sum += wkj[k][j]*delk[k];
 		}
@@ -275,7 +275,7 @@ void NeuralNetwork::UpdateWeights() {
 double NeuralNetwork::GetSampleError(double * t, double * inputs) {
 	SetInputs(inputs);
 	FeedForward();
-	double sum = 0;
+	double sum = 0.0;
 	for (int k = 0; k < out; k++) {
 		sum += pow(t[k]-z[k], 2);
 	}
@@ -421,5 +421,5 @@ void Cramer_mp3() {
 	nn.PrintNetwork();
 	//cout << "\n2nd Weight Print\n";
 
-	cout << "\n--------------------\nDONE WITH PROGRAM!\n------------------------\n";
+	cout << "\n--------------------\nDONE WITH PROGRAM!\n--------------------\n";
 }
