@@ -108,12 +108,19 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 	dwji = new double*[hid-1];
 	for (int j = 0; j < hid-1; j++) {
 		dwji[j] = new double[in];
+		for (int i = 0; i < in; i++) {
+			dwji[j][i] = 0;
+		}
 	}
 	
 	dwkj = new double*[out];
 	for (int k = 0; k < out; k++) {
 		dwkj[k] = new double[hid];
+		for (int j = 0; j < hid; j++) {
+			dwkj[k][j] = 0;
+		}
 	}
+	
 	
 	//initialize weights.
 	for (int j = 0; j < hid-1; j++) {
@@ -183,7 +190,7 @@ void NeuralNetwork::FeedForward() {
 			result += wji[j][i]*x[i];
 		}
 
-		//`cout << "Net J for " << j << " is " << result << endl;
+		//cout << "Net J for " << j << " is " << result << endl;
 		netj[j] = result;
 	}
 
@@ -198,9 +205,9 @@ void NeuralNetwork::FeedForward() {
 		double result = 0.0;
 		for (int j = 0; j < hid; j++) {
 			result += wkj[k][j]*y[j];
-			cout << "\tResult so far: " << result << " at wkj at k=" << k << " and j=" << j << " is "<< wkj[k][j] << " yj: " << y[j] << endl;
+			//cout << "\tResult so far: " << result << " at wkj at k=" << k << " and j=" << j << " is "<< wkj[k][j] << " yj: " << y[j] << endl;
 		}
-		cout << "net_k for k=" << k << ": " << result << endl;
+		//cout << "net_k for k=" << k << ": " << result << endl;
 		netk[k] = result;
 	}
 
@@ -253,13 +260,25 @@ void NeuralNetwork::UpdateWeights() {
 	//copy dwji to wji,
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
-			wji[j][i] = dwji[j][i];
+			wji[j][i] += dwji[j][i];
 		}
 	}
 	// and dwkj to wkj
 	for (int k = 0; k < out; k++) {
 		for (int j = 0; j < hid; j++) {
-			wkj[k][j] = dwkj[k][j];
+			wkj[k][j] += dwkj[k][j];
+		}
+	}
+
+	for (int j = 0; j < hid-1; j++) {
+		for (int i = 0; i < in; i++) {
+			dwji[j][i] = 0;
+		}
+	}
+
+	for (int k = 0; k < out; k++) {
+		for (int j = 0; j < hid; j++) {
+			dwkj[k][j] = 0;
 		}
 	}
 
@@ -388,11 +407,11 @@ double NeuralNetwork::GetResult() {
 
 //MAIN!!!!
 void Cramer_mp3() {
-	bool debug = true;
+	bool debug = false;
 	NeuralNetwork nn(2,5,1);
 	//cout << "Contructed\n";
 	
-	double inputs [] = {-1.0, -1.0};
+	double inputs [] = {1.0, -1.0};
 	nn.SetInputs(inputs);
 	//cout << "\nSet Inputs\n";
 	cout << "\nFeedForward\n";
