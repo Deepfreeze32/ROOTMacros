@@ -198,7 +198,9 @@ void NeuralNetwork::FeedForward() {
 		double result = 0.0;
 		for (int j = 0; j < hid; j++) {
 			result += wkj[k][j]*y[j];
+			cout << "\tResult so far: " << result << " at wkj at k=" << k << " and j=" << j << " is "<< wkj[k][j] << " yj: " << y[j] << endl;
 		}
+		cout << "net_k for k=" << k << ": " << result << endl;
 		netk[k] = result;
 	}
 
@@ -217,28 +219,28 @@ void NeuralNetwork::TrainSample(double * t, double * inputs) {
 	FeedForward();
 	//Compute Delta K, sensitivity
 	for (int k = 0; k < out; k++) {
-		delk[k] = df(netk[k])*(t[k]-z[k]);
+		delk[k] = df(netk[k]) * (t[k]-z[k]);
 	}
 	//Compute Delta W_KJ, the updated weights
 	for (int k = 0; k < out; k++) {
 		for (int j = 0; j < hid; j++) {
-			dwkj[k][j] = eta*delk[k]*y[j];
+			dwkj[k][j] += eta * delk[k] * y[j];
 		}
 	}
 
 	//Compute Delta J, sensitivity
 	for (int j = 0; j < hid-1; j++) {
-		double sum = 0.0;
+		delj[j] = 0.0;
 		for (int k = 0; k < out; k++) {
-			sum += wkj[k][j]*delk[k];
+			delj[j] += wkj[k][j] * delk[k];
 		}
-		delj[j] = df(netj[j])*sum;
+		delj[j] *= df(netj[j]);
 	}
 
 	//computer Delta W_JI, updated weights
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
-			dwji[j][i] = eta*x[i]*delj[j];
+			dwji[j][i] += eta * x[i] * delj[j];
 		}
 	}
 
@@ -299,7 +301,7 @@ double NeuralNetwork::GetThreshold() {
 	return largest;
 }
 
-//This is the Fast Inverse Square Root Function. Aliased because it's easy to change the emthodolgy that way.
+//This is the Fast Inverse Square Root Function. Aliased because it's easy to change the methodolgy that way.
 double NeuralNetwork::InvSqrt(double n) {
 	return pow(sqrt(n),-1);
 }
@@ -320,12 +322,14 @@ double NeuralNetwork::SetEta(double e) {
 //The activation function
 double NeuralNetwork::f(double net) {
 	//cout << "a: " << a << " b: " << b << " net: " << net << endl;
-	return a*TMath::TanH(b*net);
+	return a*tanh(b*net);
 }
 
 //The derivative of the activation function
 double NeuralNetwork::df(double net) {
-	return (a*b)/(TMath::CosH(b*net)*TMath::CosH(b*net));
+	//cout << "Net: " << net << " b: " << b << " net*b: " << net*b << endl;
+	double coshv = cosh(b*net);
+	return (a*b)/(pow(coshv,2));
 }
 
 //Display network weights
@@ -384,10 +388,11 @@ double NeuralNetwork::GetResult() {
 
 //MAIN!!!!
 void Cramer_mp3() {
-	NeuralNetwork nn(2,3,1);
+	bool debug = true;
+	NeuralNetwork nn(2,5,1);
 	//cout << "Contructed\n";
 	
-	double inputs [] = {-1.0, 1.0};
+	double inputs [] = {-1.0, -1.0};
 	nn.SetInputs(inputs);
 	//cout << "\nSet Inputs\n";
 	cout << "\nFeedForward\n";
@@ -397,35 +402,39 @@ void Cramer_mp3() {
 	//cout << "\n1st Weight Print\n";
 	nn.PrintNetwork();
 	//cout << "\n1st Network Print\n";
-	double train1 [] = {1}; 
+	double train1 [] = {-1}; 
 	nn.TrainSample(train1,inputs);
 	nn.UpdateWeights();
+
 	//Get some random training data!
 	for (int i = 0; i < 50; i++) {
-		double rand1 = 1;
-		//Ensure it's not 0.
-		do {
-			rand1 = gRandom->Uniform(-1,1);
-		} while(rand1 == 0);
-		
-		double rand2 = 1;
-		//Ensure it's not 0.
-		do {
-			rand2 = gRandom->Uniform(-1,1);
-		} while(rand2 == 0);
-		
-		//Calculate the right answer
-		double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
+		if (!debug) {
+			double rand1 = 1;
+			//Ensure it's not 0.
+			do {
+				rand1 = gRandom->Uniform(-1,1);
+			} while(rand1 == 0);
+			
+			double rand2 = 1;
+			//Ensure it's not 0.
+			do {
+				rand2 = gRandom->Uniform(-1,1);
+			} while(rand2 == 0);
+			
+			//Calculate the right answer
+			double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
 
-		//Set up arrays for training
-		double inputs1 [] = {rand1,rand2};
-		double train2 [] = {sol1};
-		
-		//Try Online training, update after each attempt.
-		nn.TrainSample(train2,inputs1);
-		nn.UpdateWeights();
-		//nn.TrainSample(train1,inputs);
-		//nn.UpdateWeights();
+			//Set up arrays for training
+			double inputs1 [] = {rand1,rand2};
+			double train2 [] = {sol1};
+			
+			//Try Online training, update after each attempt.
+			nn.TrainSample(train2,inputs1);
+			nn.UpdateWeights();
+		} else {
+			nn.TrainSample(train1,inputs);
+			nn.UpdateWeights();
+		}
 	}
 	//cout << "\nBackPropogate on 1\n";
 	
@@ -437,29 +446,33 @@ void Cramer_mp3() {
 	nn.PrintNetwork();
 	//cout << "\n2nd Weight Print\n";
 
-	cout << "Sample Error: " << nn.GetSampleError(inputs,train1) << endl;
+	if (debug) {
+		cout << "Did it converge? " << (((nn.GetResult() > 0 && train1[0] > 0) || (nn.GetResult() < 0 && train1[0] < 0))?"Yes!":"No! :(") << endl;
+	} else {
+		cout << "Sample Error: " << nn.GetSampleError(inputs,train1) << endl;
 
-	//Error for 1000 samples
-	int right = 0;
-	for (int i = 0; i < 1000; i++) {
-		double rand1 = 1;
-		do {
-			rand1 = gRandom->Uniform(-1,1);
-		} while(rand1 == 0);
-		double rand2 = 1;
-		do {
-			rand2 = gRandom->Uniform(-1,1);
-		} while(rand2 == 0);
-		double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
-		double inputs1 [] = {rand1,rand2};
-		nn.SetInputs(inputs1);
-		nn.FeedForward();
-		if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
-			right++;
+		//Error for 1000 samples
+		int right = 0;
+		for (int i = 0; i < 1000; i++) {
+			double rand1 = 1;
+			do {
+				rand1 = gRandom->Uniform(-1,1);
+			} while(rand1 == 0);
+			double rand2 = 1;
+			do {
+				rand2 = gRandom->Uniform(-1,1);
+			} while(rand2 == 0);
+			double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
+			double inputs1 [] = {rand1,rand2};
+			nn.SetInputs(inputs1);
+			nn.FeedForward();
+			if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
+				right++;
+			}
 		}
+		cout << "Right: " << right/10 << "%" << endl;
 	}
-	cout << "Right: " << right/10 << "%" << endl;
-	//cout << "Did it converge? " << ((nn.GetResult() > 0)?"Yes!":"No! :(") << endl;
+	
 	cout << "\n--------------------\nDONE WITH PROGRAM!\n--------------------\n";
 
 	//Now do pretty stuff?
