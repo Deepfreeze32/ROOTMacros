@@ -49,7 +49,7 @@ public:
 	NeuralNetwork();
 	~NeuralNetwork();
 	void FeedForward();
-	void TrainSample(double * t,double * inputs);
+	void TrainSample(double * t);
 	void UpdateWeights();
 	double eta();
 	double SetEta(double e);
@@ -218,9 +218,8 @@ void NeuralNetwork::FeedForward() {
 }
 
 //Train a sample for given inputs.
-void NeuralNetwork::TrainSample(double * t, double * inputs) {
-	//Set inputs just in case.
-	SetInputs(inputs);
+void NeuralNetwork::TrainSample(double * t) {
+	
 
 	//FeedForward just because...
 	FeedForward();
@@ -258,11 +257,13 @@ void NeuralNetwork::TrainSample(double * t, double * inputs) {
 //Applies current training, delta W becomes W.
 void NeuralNetwork::UpdateWeights() {
 	//copy dwji to wji,
+	//cout << "updating wji\n";
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
 			wji[j][i] += dwji[j][i];
 		}
 	}
+	//cout << "updating wkj\n";
 	// and dwkj to wkj
 	for (int k = 0; k < out; k++) {
 		for (int j = 0; j < hid; j++) {
@@ -270,12 +271,14 @@ void NeuralNetwork::UpdateWeights() {
 		}
 	}
 
+	//cout << "updating dwji\n";
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
 			dwji[j][i] = 0;
 		}
 	}
 
+	//cout << "updating dwkj\n";
 	for (int k = 0; k < out; k++) {
 		for (int j = 0; j < hid; j++) {
 			dwkj[k][j] = 0;
@@ -304,7 +307,7 @@ double NeuralNetwork::GetThreshold() {
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
 			if (dwji[j][i] > largest) {
-				largest = dwji[j+1][i];
+				largest = dwji[j][i];
 			}
 		}
 	}
@@ -410,11 +413,11 @@ void Cramer_mp3() {
 	bool debug = false;
 	NeuralNetwork nn(2,5,1);
 	//cout << "Contructed\n";
-	
+	nn.SetEta(0.07);
 	double inputs [] = {1.0, -1.0};
 	nn.SetInputs(inputs);
 	//cout << "\nSet Inputs\n";
-	cout << "\nFeedForward\n";
+	//cout << "\nFeedForward\n";
 	nn.FeedForward();
 	
 	nn.PrintWeights();
@@ -422,36 +425,65 @@ void Cramer_mp3() {
 	nn.PrintNetwork();
 	//cout << "\n1st Network Print\n";
 	double train1 [] = {-1}; 
-	nn.TrainSample(train1,inputs);
+
+	nn.SetInputs(inputs);
+	nn.TrainSample(train1);
 	nn.UpdateWeights();
 
 	//Get some random training data!
-	for (int i = 0; i < 50; i++) {
-		if (!debug) {
-			double rand1 = 1;
+	if (!debug) {
+		double threshold = 0.00001;
+		int iterations = 0;
+		double rand1 = 1;
+		double rand2 = 1;
+		double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
+
+		double inputs1 [] = {rand1,rand2};
+		double train2 [] = {sol1};
+		while (true) {
+			//cout << "setting random 1\n";
+			rand1 = 1;
 			//Ensure it's not 0.
 			do {
 				rand1 = gRandom->Uniform(-1,1);
 			} while(rand1 == 0);
 			
-			double rand2 = 1;
+			//cout << "setting random 2\n";
+			rand2 = 1;
 			//Ensure it's not 0.
 			do {
 				rand2 = gRandom->Uniform(-1,1);
 			} while(rand2 == 0);
 			
+			//cout << "Calculating solution\n";
 			//Calculate the right answer
-			double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
+			sol1 = (rand1*rand2 > 0)?1.0:-1.0;
 
+			//cout << "setting arrays\n";
 			//Set up arrays for training
-			double inputs1 [] = {rand1,rand2};
-			double train2 [] = {sol1};
+			inputs1[0] = rand1;
+			inputs1[1] = rand2;
+			train2[0] = sol1;
 			
+			//cout << "Setting inputs\n";			
 			//Try Online training, update after each attempt.
-			nn.TrainSample(train2,inputs1);
+			nn.SetInputs(inputs1);
+			//cout << "Training\n" << endl;
+			nn.TrainSample(train2);
+
+			iterations++;
+			//cout << "iteration " << iterations << endl;
+			if (nn.GetThreshold() < threshold) {
+				nn.UpdateWeights();
+				break;
+			}
 			nn.UpdateWeights();
-		} else {
-			nn.TrainSample(train1,inputs);
+
+		}
+	} else {
+		for (int i = 0; i < 50; i++) {
+			nn.SetInputs(inputs);
+			nn.TrainSample(train1);
 			nn.UpdateWeights();
 		}
 	}
@@ -487,6 +519,8 @@ void Cramer_mp3() {
 			nn.FeedForward();
 			if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
 				right++;
+			} else {
+				cout << "\tWRONG: input_1: " << rand1 << " input_2: " << rand2 << " Solution: " << sol1 << " actual value: " << nn.GetResult() << endl;
 			}
 		}
 		cout << "Right: " << right/10 << "%" << endl;
