@@ -5,7 +5,7 @@
 
 //Most variables and functions named in the file Dr. Daugherity gave us.
 class NeuralNetwork {
-private:
+public:
 	double a;
 	double b;
 	//node counts
@@ -45,7 +45,7 @@ private:
 	void CalcNetJ();
 	void CalcNetK();
 	void BackPropogateInit();
-public:
+
 	NeuralNetwork();
 	~NeuralNetwork();
 	void FeedForward();
@@ -53,7 +53,7 @@ public:
 	void UpdateWeights();
 	double eta();
 	double SetEta(double e);
-	double GetSampleError(double * t);
+	double GetSampleError(double * t, double * inputs);
 	double GetThreshold();
 
 	double Eta();
@@ -73,7 +73,7 @@ public:
 NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 	//set variables
 	a = 1.716;
-	b = 1.0/3.0;
+	b = 2.0/3.0;
 	in = input + 1;
 	hid = hidden + 1;
 	out = output;
@@ -137,8 +137,8 @@ NeuralNetwork::NeuralNetwork(int input, int hidden, int output) {
 		}
 	}
 
-	//The default
-	eta = 0.1;
+	//The d
+	eta = 0.07;
 }
 
 //Destructor to free memory.
@@ -154,22 +154,22 @@ NeuralNetwork::~NeuralNetwork() {
 	delete delj;
 	
 	for (int j = 0; j < hid-1; j++) {
-		delete []wji[];
+		delete []wji;
 	}
 	delete []wji;
 
 	for (int k = 0; k < out; k++) {
-		delete []wkj[];
+		delete []wkj;
 	}
 	delete []wkj;
 
 	for (int j = 0; j < hid-1; j++) {
-		delete []dwji[];
+		delete []dwji;
 	}
 	delete []dwji;
 
 	for (int k = 0; k < out; k++) {
-		delete []dwkj[];
+		delete []dwkj;
 	}
 	delete []dwkj;
 }
@@ -410,7 +410,7 @@ double NeuralNetwork::GetResult() {
 
 //MAIN!!!!
 void Cramer_mp3() {
-	bool debug = false;
+	bool debug = true;
 	NeuralNetwork nn(2,5,1);
 	//cout << "Contructed\n";
 	nn.SetEta(0.07);
@@ -420,15 +420,188 @@ void Cramer_mp3() {
 	//cout << "\nFeedForward\n";
 	nn.FeedForward();
 	
-	nn.PrintWeights();
+	//nn.PrintWeights();
 	//cout << "\n1st Weight Print\n";
-	nn.PrintNetwork();
+	//nn.PrintNetwork();
 	//cout << "\n1st Network Print\n";
-	double train1 [] = {-1}; 
+	double train1 [] = {-0.5}; 
 
-	nn.SetInputs(inputs);
-	nn.TrainSample(train1);
-	nn.UpdateWeights();
+	//nn.SetInputs(inputs);
+	//nn.TrainSample(train1);
+	//nn.UpdateWeights();
+
+
+	//*******************************
+	// ***** FIX - My tests here ***
+	//*******************************
+      
+	//Do a quick stocastic training
+	int NUMSAMPLES = 10000;
+	double threshold = 0.000001;
+	std::vector<double> thresh(NUMSAMPLES); // storage for thresholds
+	std::vector<double> err(NUMSAMPLES); // storage for sample error
+	int iter = 0;
+	for(;;) {
+		double avgErr = 0;
+
+		double i0 = gRandom->Uniform(-1,1);
+		double i1 = gRandom->Uniform(-1,1);
+		inputs[0] = i0;
+		inputs[1] = i1;
+		nn.SetInputs(inputs);
+		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
+		else train1[0] = -1.0;
+		nn.TrainSample(train1);
+		avgErr += nn.GetSampleError(train1,inputs);
+
+		inputs[0] = -1.0*i0;
+		inputs[1] = i1;
+		nn.SetInputs(inputs);
+		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
+		else train1[0] = -1.0;
+		nn.TrainSample(train1);
+		avgErr += nn.GetSampleError(train1,inputs);
+
+		inputs[0] = i0;
+		inputs[1] = -1.0*i1;
+		nn.SetInputs(inputs);
+		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
+		else train1[0] = -1.0;
+		nn.TrainSample(train1);
+		avgErr += nn.GetSampleError(train1,inputs);
+
+		inputs[0] = -1.0*i0;
+		inputs[1] = -1.0*i1;
+		nn.SetInputs(inputs);
+		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
+		else train1[0] = -1.0;
+		nn.TrainSample(train1);
+		avgErr += nn.GetSampleError(train1,inputs);
+
+		avgErr /= 4;
+
+		thresh.push_back(nn.GetThreshold());
+		if (thresh.size() > NUMSAMPLES && err.size() > NUMSAMPLES) {
+			NUMSAMPLES = thresh.size();
+		}
+		if (nn.GetThreshold() < threshold) {
+			nn.UpdateWeights();
+			nn.FeedForward();
+			err.push_back(avgErr);
+			break;
+		}
+		nn.UpdateWeights();
+		nn.FeedForward();
+		err.push_back(avgErr);
+		iter++;
+		
+		if (iter % 1000 == 0) { 
+			cout << "Still alive! Threshold: " << thresh.back() << endl;
+			nn.SetEta(nn.Eta() / 1.2);
+		}
+
+		//cout << "----------------------" << endl;
+		//nn.PrintWeights();
+		//nn.PrintNetwork();
+	}
+
+	cout << "**** Done Training ********" << endl;
+	// copy and paste of plotting code below
+	nn.PrintWeights();
+	nn.PrintNetwork();
+	cout << inputs[0] << "\t" << inputs[1] << endl;
+	
+	gStyle->SetPalette(1);
+	c1 = new TCanvas("c1", "Machine Problem 3",800,400);
+	c1->Divide(4,2);
+	// drawing stuff....need to figure it out
+	// histograms
+	double x1, x2;
+	TH2D* h[6];
+	h[0] = new TH2D("h[0]", "OUTPUT", 20, -1, 1, 20, -1, 1);
+	h[1] = new TH2D("h[1]", "HIDDEN 1", 20, -1, 1, 20, -1, 1);
+	h[2] = new TH2D("h[2]", "HIDDEN 2", 20, -1, 1, 20, -1, 1);
+	h[3] = new TH2D("h[3]", "HIDDEN 3", 20, -1, 1, 20, -1, 1);
+	h[4] = new TH2D("h[4]", "HIDDEN 4", 20, -1, 1, 20, -1, 1);
+	h[5] = new TH2D("h[5]", "HIDDEN 5", 20, -1, 1, 20, -1, 1);
+	for(int i=1; i<=h[0]->GetNbinsX(); i++){
+		for(int j=1; j<=h[0]->GetNbinsY(); j++){
+			x1 = h[0]->GetXaxis()->GetBinCenter(i);
+			x2 = h[0]->GetYaxis()->GetBinCenter(j);
+			nn.x[1] = x1;
+			nn.x[2] = x2;
+			nn.FeedForward();
+			h[0]->SetBinContent(i, j, nn.z[0]);
+		}
+	}
+	for(int num=1; num<nn.hid; num++){
+		for(int i=1; i<=h[num]->GetNbinsX(); i++){
+	  		for(int j=1; j<=h[num]->GetNbinsY(); j++){
+			  x1 = h[num]->GetXaxis()->GetBinCenter(i);
+			  x2 = h[num]->GetYaxis()->GetBinCenter(j);
+			  nn.x[1] = x1;
+			  nn.x[2] = x2;
+			  nn.FeedForward();
+			  h[num]->SetBinContent(i, j, nn.y[num]);
+		  	}
+		}
+	}
+	
+	for (int i = 0; i < nn.hid; i++) {
+	  c1->cd(i+1);
+	  h[i]->Draw("surf1");
+	  gPad->SetTheta(60);
+	  gPad->SetPhi(-45);
+	}
+	
+	// graphs for learning curves
+	double * xaxis = new double[NUMSAMPLES];
+	for(int i=0; i<NUMSAMPLES; i++) xaxis[i]=i; // Make an x-axis for our graphs
+	TGraph* tgthr = new TGraph(NUMSAMPLES, xaxis, &thresh[0]);
+	TGraph* tgerr = new TGraph(NUMSAMPLES, xaxis, &err[0]);
+	c1->cd(7);  
+	gPad->SetLogy();
+	tgthr->SetTitle("Threshold");
+	tgthr->Draw("AL");
+	c1->cd(8);  
+	gPad->SetLogy();
+	tgerr->SetTitle("Error");
+	tgerr->SetLineColor(kBlue);
+	tgerr->Draw("AL");
+
+	c1->Update();
+	c1->Print("xor.gif");
+
+	// *** copy and paste of evaluation code below ***
+	//Error for 1000 samples
+	cout << "*** Testing 1000 samples..." << endl;
+	int right = 0;
+	for (int i = 0; i < 1000; i++) {
+	  double rand1 = 1;
+	  do {
+	    rand1 = gRandom->Uniform(-1,1);
+	  } while(rand1 == 0);
+	  double rand2 = 1;
+	  do {
+	    rand2 = gRandom->Uniform(-1,1);
+	  } while(rand2 == 0);
+	  double sol1 = (rand1*rand2 < 0)?1.0:-1.0;  // FIX - THIS HAD THE WRONG SIGNS!
+	  double inputs1 [] = {rand1,rand2};
+	  nn.SetInputs(inputs1);
+	  nn.FeedForward();
+	  if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
+	    right++;
+	  } else {
+	    cout << "\tWRONG: input_1: " << rand1 << " input_2: " << rand2 << " Solution: " << sol1 << " actual value: " << nn.GetResult() << endl;
+	  }
+	}
+	cout << "Right: " << right << endl;
+
+	delete []xaxis;
+	return;
+	//*************************************8
+	// ** untouched below here **
+	//*************************************8
 
 	//Get some random training data!
 	if (!debug) {
@@ -530,4 +703,48 @@ void Cramer_mp3() {
 
 	//Now do pretty stuff?
 	//th2d1 = new TH2D();
+
+	c1 = new TCanvas("c1", "Machine Problem 3",800,400);
+	c1->Divide(3,2);
+	// drawing stuff....need to figure it out
+	// histograms
+	double x1, x2;
+	TH2D* h[6];
+	h[0] = new TH2D("h[0]", "OUTPUT", 20, -1, 1, 20, -1, 1);
+	h[1] = new TH2D("h[1]", "HIDDEN 1", 20, -1, 1, 20, -1, 1);
+	h[2] = new TH2D("h[2]", "HIDDEN 2", 20, -1, 1, 20, -1, 1);
+	h[3] = new TH2D("h[3]", "HIDDEN 3", 20, -1, 1, 20, -1, 1);
+	h[4] = new TH2D("h[4]", "HIDDEN 4", 20, -1, 1, 20, -1, 1);
+	h[5] = new TH2D("h[5]", "HIDDEN 5", 20, -1, 1, 20, -1, 1);
+	for(int i=1; i<=h[0]->GetNbinsX(); i++){
+		for(int j=1; j<=h[0]->GetNbinsY(); j++){
+			x1 = h[0]->GetXaxis()->GetBinCenter(i);
+			x2 = h[0]->GetYaxis()->GetBinCenter(j);
+			nn.x[1] = x1;
+			nn.x[2] = x2;
+			nn.FeedForward();
+			h[0]->SetBinContent(i, j, nn.z[0]);
+		}
+	}
+	for(int num=1; num<nn.hid; num++){
+		for(int i=1; i<=h[num]->GetNbinsX(); i++){
+	  		for(int j=1; j<=h[num]->GetNbinsY(); j++){
+				x1 = h[num]->GetXaxis()->GetBinCenter(i);
+				x2 = h[num]->GetYaxis()->GetBinCenter(j);
+		    	nn.x[1] = x1;
+				nn.x[2] = x2;
+				nn.FeedForward();
+				h[num]->SetBinContent(i, j, nn.y[num]);
+		  	}
+		}
+	}
+
+	for (int i = 0; i < nn.hid; i++) {
+		c1->cd(i+1);
+		h[i]->Draw("surf1");
+		gPad->SetTheta(60);
+		gPad->SetPhi(-45);
+	}
+	c1->Update();
+	c1->Print("xor.gif");
 }
