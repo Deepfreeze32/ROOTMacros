@@ -408,26 +408,55 @@ double NeuralNetwork::GetResult() {
 	return z[0];
 }
 
+double * collapse(double ** letter) {
+	double[64] betterLetter = {0.0};
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
+			betterLetter[i*8+j] = letter[i][j];
+		}
+	}
+	return betterLetter;
+}
+
+double ** noisify(double ** letter) {
+	double[][] newLetter = {{0.0},{0.0},{0.0},{0.0},{0.0},{0.0},{0.0},{0.0}};
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
+			newLetter[i][j] = letter[i][j] + gRandom->Uniform(-0.5,0.5);;
+		}
+	}
+	return newLetter;
+}
+
 //MAIN!!!!
 void Cramer_mp4() {
 	bool debug = true;
 	NeuralNetwork nn(64,3,3);
+
+	double[][] letterA = {{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0}{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0}};
+	double[][] letterC = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0}};
+	double[][] letterU = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0}{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}};
 	//cout << "Contructed\n";
 	nn.SetEta(0.07);
-	double inputs [] = {1.0, -1.0};
-	nn.SetInputs(inputs);
-	//cout << "\nSet Inputs\n";
-	//cout << "\nFeedForward\n";
-	nn.FeedForward();
 	
-	//nn.PrintWeights();
-	//cout << "\n1st Weight Print\n";
-	//nn.PrintNetwork();
-	//cout << "\n1st Network Print\n";
-	double train1 [] = {-0.5}; 
+	nn.SetInputs(collapse(letterA));
+	nn.FeedForward();
+	double train1 [] = {1.0,0.0,0.0}; 
+	nn.TrainSample(train1);
 
-	//nn.SetInputs(inputs);
-	//nn.TrainSample(train1);
+	nn.SetInputs(collapse(letterC));
+	nn.FeedForward();
+	train1[0] = 0.0;
+	train1[1] = 1.0;
+	train1[2] = 0.0; 
+	nn.TrainSample(train1);
+
+	nn.SetInputs(collapse(letterU));
+	nn.FeedForward();
+	train1[0] = 0.0;
+	train1[1] = 0.0;
+	train1[2] = 1.0; 
+	nn.TrainSample(train1);
 	//nn.UpdateWeights();
 
 
@@ -567,154 +596,5 @@ void Cramer_mp4() {
 	}
 	cout << "Right: " << right << endl;
 
-	delete []xaxis;
 	return;
-	//*************************************8
-	// ** untouched below here **
-	//*************************************8
-
-	//Get some random training data!
-	if (!debug) {
-		double threshold = 0.00001;
-		int iterations = 0;
-		double rand1 = 1;
-		double rand2 = 1;
-		double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
-
-		double inputs1 [] = {rand1,rand2};
-		double train2 [] = {sol1};
-		while (true) {
-			//cout << "setting random 1\n";
-			rand1 = 1;
-			//Ensure it's not 0.
-			do {
-				rand1 = gRandom->Uniform(-1,1);
-			} while(rand1 == 0);
-			
-			//cout << "setting random 2\n";
-			rand2 = 1;
-			//Ensure it's not 0.
-			do {
-				rand2 = gRandom->Uniform(-1,1);
-			} while(rand2 == 0);
-			
-			//cout << "Calculating solution\n";
-			//Calculate the right answer
-			sol1 = (rand1*rand2 > 0)?1.0:-1.0;
-
-			//cout << "setting arrays\n";
-			//Set up arrays for training
-			inputs1[0] = rand1;
-			inputs1[1] = rand2;
-			train2[0] = sol1;
-			
-			//cout << "Setting inputs\n";			
-			//Try Online training, update after each attempt.
-			nn.SetInputs(inputs1);
-			//cout << "Training\n" << endl;
-			nn.TrainSample(train2);
-
-			iterations++;
-			//cout << "iteration " << iterations << endl;
-			if (nn.GetThreshold() < threshold) {
-				nn.UpdateWeights();
-				break;
-			}
-			nn.UpdateWeights();
-
-		}
-	} else {
-		for (int i = 0; i < 50; i++) {
-			nn.SetInputs(inputs);
-			nn.TrainSample(train1);
-			nn.UpdateWeights();
-		}
-	}
-	//cout << "\nBackPropogate on 1\n";
-	
-	//cout << "\nUpdated Weights\n";
-	nn.SetInputs(inputs);
-	nn.FeedForward();
-	nn.PrintWeights();
-	//cout << "\n2nd Weight Print\n";
-	nn.PrintNetwork();
-	//cout << "\n2nd Weight Print\n";
-
-	if (debug) {
-		cout << "Did it converge? " << (((nn.GetResult() > 0 && train1[0] > 0) || (nn.GetResult() < 0 && train1[0] < 0))?"Yes!":"No! :(") << endl;
-	} else {
-		cout << "Sample Error: " << nn.GetSampleError(inputs,train1) << endl;
-
-		//Error for 1000 samples
-		int right = 0;
-		for (int i = 0; i < 1000; i++) {
-			double rand1 = 1;
-			do {
-				rand1 = gRandom->Uniform(-1,1);
-			} while(rand1 == 0);
-			double rand2 = 1;
-			do {
-				rand2 = gRandom->Uniform(-1,1);
-			} while(rand2 == 0);
-			double sol1 = (rand1*rand2 > 0)?1.0:-1.0;
-			double inputs1 [] = {rand1,rand2};
-			nn.SetInputs(inputs1);
-			nn.FeedForward();
-			if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
-				right++;
-			} else {
-				cout << "\tWRONG: input_1: " << rand1 << " input_2: " << rand2 << " Solution: " << sol1 << " actual value: " << nn.GetResult() << endl;
-			}
-		}
-		cout << "Right: " << right/10 << "%" << endl;
-	}
-	
-	cout << "\n--------------------\nDONE WITH PROGRAM!\n--------------------\n";
-
-	//Now do pretty stuff?
-	//th2d1 = new TH2D();
-
-	c1 = new TCanvas("c1", "Machine Problem 3",800,400);
-	c1->Divide(3,2);
-	// drawing stuff....need to figure it out
-	// histograms
-	double x1, x2;
-	TH2D* h[6];
-	h[0] = new TH2D("h[0]", "OUTPUT", 20, -1, 1, 20, -1, 1);
-	h[1] = new TH2D("h[1]", "HIDDEN 1", 20, -1, 1, 20, -1, 1);
-	h[2] = new TH2D("h[2]", "HIDDEN 2", 20, -1, 1, 20, -1, 1);
-	h[3] = new TH2D("h[3]", "HIDDEN 3", 20, -1, 1, 20, -1, 1);
-	h[4] = new TH2D("h[4]", "HIDDEN 4", 20, -1, 1, 20, -1, 1);
-	h[5] = new TH2D("h[5]", "HIDDEN 5", 20, -1, 1, 20, -1, 1);
-	for(int i=1; i<=h[0]->GetNbinsX(); i++){
-		for(int j=1; j<=h[0]->GetNbinsY(); j++){
-			x1 = h[0]->GetXaxis()->GetBinCenter(i);
-			x2 = h[0]->GetYaxis()->GetBinCenter(j);
-			nn.x[1] = x1;
-			nn.x[2] = x2;
-			nn.FeedForward();
-			h[0]->SetBinContent(i, j, nn.z[0]);
-		}
-	}
-	for(int num=1; num<nn.hid; num++){
-		for(int i=1; i<=h[num]->GetNbinsX(); i++){
-	  		for(int j=1; j<=h[num]->GetNbinsY(); j++){
-				x1 = h[num]->GetXaxis()->GetBinCenter(i);
-				x2 = h[num]->GetYaxis()->GetBinCenter(j);
-		    	nn.x[1] = x1;
-				nn.x[2] = x2;
-				nn.FeedForward();
-				h[num]->SetBinContent(i, j, nn.y[num]);
-		  	}
-		}
-	}
-
-	for (int i = 0; i < nn.hid; i++) {
-		c1->cd(i+1);
-		h[i]->Draw("surf1");
-		gPad->SetTheta(60);
-		gPad->SetPhi(-45);
-	}
-	c1->Update();
-	c1->Print("xor.gif");
 }
