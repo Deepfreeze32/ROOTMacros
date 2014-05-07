@@ -408,18 +408,19 @@ double NeuralNetwork::GetResult() {
 	return z[0];
 }
 
-double * collapse(double ** letter) {
-	double betterLetter[64] = {0.0};
+double * collapse(double ** letter,double * betterLetter) {
+	
+	cout << "Entering collapse loop\n";
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
+			cout << "Processing: i=" << i << ", j=" << j << ", new index: " << i*8+j << endl;
 			betterLetter[i*8+j] = letter[i][j];
 		}
 	}
 	return betterLetter;
 }
 
-double ** noisify(double ** letter) {
-	double newLetter[8][8] = {{0.0},{0.0},{0.0},{0.0},{0.0},{0.0},{0.0},{0.0}};
+double ** noisify(double ** letter, double ** newLetter) {
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
 			newLetter[i][j] = letter[i][j] + gRandom->Uniform(-0.5,0.5);;
@@ -432,32 +433,45 @@ double ** noisify(double ** letter) {
 void Cramer_mp4() {
 	bool debug = true;
 	NeuralNetwork nn(64,3,3);
+	double newLetter[8][8];
+	double betterLetter[64];
 
-	double letterA[8][8] = {{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0}{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0}};
-	double letterC[8][8] = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0}};
-	double letterU[8][8]  = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0}{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}};
+	double letterA[8][8] = {{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0}};
+	double letterC[8][8] = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0}};
+	double letterU[8][8]  = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}};
 	//cout << "Contructed\n";
-	nn.SetEta(0.07);
-	
-	nn.SetInputs(collapse(letterA));
+	//nn.SetEta(0.07);
+	cout << "Collapsing A\n";
+	double * inputs = collapse(letterA,betterLetter);
+	cout << "Inputing A\n";
+	nn.SetInputs(inputs);
+	cout << "Feeding A\n";
 	nn.FeedForward();
-	double train1 [] = {1.0,0.0,0.0}; 
+	cout << "Setting results\n";
+	double train1 [3] = {1.0,0.0,0.0}; 
+	cout << "Training\n";
 	nn.TrainSample(train1);
 
 	nn.SetInputs(collapse(letterC));
+	cout << "Feeding C\n";
 	nn.FeedForward();
+	cout << "Setting results\n";
 	train1[0] = 0.0;
 	train1[1] = 1.0;
 	train1[2] = 0.0; 
+	cout << "Training\n";
 	nn.TrainSample(train1);
 
 	nn.SetInputs(collapse(letterU));
+	cout << "Feeding U\n";
 	nn.FeedForward();
+	cout << "Setting results\n";
 	train1[0] = 0.0;
 	train1[1] = 0.0;
 	train1[2] = 1.0; 
+	cout << "Training\n";
 	nn.TrainSample(train1);
-	//nn.UpdateWeights();
+	nn.UpdateWeights();
 
 
 	//*******************************
