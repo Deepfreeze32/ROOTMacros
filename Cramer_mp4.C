@@ -4,6 +4,7 @@
 // Travis Cramer
 
 //Most variables and functions named in the file Dr. Daugherity gave us.
+const double trainSize = 3.0;
 class NeuralNetwork {
 public:
 	double a;
@@ -66,7 +67,7 @@ public:
 	void PrintWeights();
 
 	void SetInputs(double * inputs);
-	double GetResult();
+	int GetResult();
 };
 
 //Constructor. Give input and hidden node counts WITHOUT bias included. 
@@ -176,7 +177,7 @@ NeuralNetwork::~NeuralNetwork() {
 
 //Manually specify what the inputs are.
 double NeuralNetwork::SetInputs(double * inputs) {
-	for (int i = 1; i < in; i++) {
+	for (int i = 0; i < in; i++) {
 		x[i] = inputs[i-1];
 	}
 }
@@ -209,10 +210,8 @@ void NeuralNetwork::FeedForward() {
 		}
 		//cout << "net_k for k=" << k << ": " << result << endl;
 		netk[k] = result;
-	}
 
-	//Set the values of the Output layer
-	for (int k = 0; k < out; k++) {
+		//Set output
 		z[k] = f(netk[k]);
 	}
 }
@@ -230,7 +229,7 @@ void NeuralNetwork::TrainSample(double * t) {
 	//Compute Delta W_KJ, the updated weights
 	for (int k = 0; k < out; k++) {
 		for (int j = 0; j < hid; j++) {
-			dwkj[k][j] += eta * delk[k] * y[j];
+			dwkj[k][j] += (eta * delk[k] * y[j]) / trainSize;
 		}
 	}
 
@@ -246,7 +245,7 @@ void NeuralNetwork::TrainSample(double * t) {
 	//computer Delta W_JI, updated weights
 	for (int j = 0; j < hid-1; j++) {
 		for (int i = 0; i < in; i++) {
-			dwji[j][i] += eta * x[i] * delj[j];
+			dwji[j][i] += (eta * x[i] * delj[j]) / trainSize;
 		}
 	}
 
@@ -404,24 +403,42 @@ void NeuralNetwork::PrintNetwork() {
 }
 
 //Just a hackish way to get the output since z is private
-double NeuralNetwork::GetResult() {
-	return z[0];
+int NeuralNetwork::GetResult() {
+	double max = z[0];
+	int ind = 0;
+
+	for (int k = 0; k < out; k++) {
+		if (max < z[k]) {
+			ind = k;
+			max = z[k];
+		}
+	}
+
+	return ind;
 }
 
-double * collapse(double ** letter,double * betterLetter) {
-	
-	cout << "Entering collapse loop\n";
+double * collapse(double letter[8][8],double * betterLetter) {
 	for (int i = 0; i < 8; i++) {
 		for (int j = 0; j < 8; j++) {
-			cout << "Processing: i=" << i << ", j=" << j << ", new index: " << i*8+j << endl;
 			betterLetter[i*8+j] = letter[i][j];
 		}
 	}
 	return betterLetter;
 }
 
-double ** noisify(double ** letter, double ** newLetter) {
+double ** noisify(double letter[8][8], double newLetter[8][8]) {
 	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
+			newLetter[i][j] = letter[i][j] + gRandom->Uniform(-0.5,0.5);;
+		}
+	}
+	return newLetter;
+}
+
+double ** noisifyTest(double letter[8][8]) {
+	double ** newLetter = new double*[8];
+	for (int i = 0; i < 8; i++) {
+		newLetter[i] = new double*[8];
 		for (int j = 0; j < 8; j++) {
 			newLetter[i][j] = letter[i][j] + gRandom->Uniform(-0.5,0.5);;
 		}
@@ -432,16 +449,20 @@ double ** noisify(double ** letter, double ** newLetter) {
 //MAIN!!!!
 void Cramer_mp4() {
 	bool debug = true;
-	NeuralNetwork nn(64,3,3);
+
+	const int in = 64;
+	const int hid = 3;
+	int out = 3;
+	NeuralNetwork nn(in,hid,out);
 	double newLetter[8][8];
 	double betterLetter[64];
 
 	double letterA[8][8] = {{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0}};
 	double letterC[8][8] = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0},{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0}};
-	double letterU[8][8]  = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}};
-	//cout << "Contructed\n";
+	double letterU[8][8] = {{1.0,-1.0,-1.0,-1.0,-1.0,-1.0,-1.0,1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{-1.0,1.0,1.0,1.0,1.0,1.0,1.0,-1.0},{1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0}};
+	
 	//nn.SetEta(0.07);
-	cout << "Collapsing A\n";
+	
 	double * inputs = collapse(letterA,betterLetter);
 	cout << "Inputing A\n";
 	nn.SetInputs(inputs);
@@ -452,7 +473,7 @@ void Cramer_mp4() {
 	cout << "Training\n";
 	nn.TrainSample(train1);
 
-	nn.SetInputs(collapse(letterC));
+	nn.SetInputs(collapse(letterC,betterLetter));
 	cout << "Feeding C\n";
 	nn.FeedForward();
 	cout << "Setting results\n";
@@ -462,7 +483,7 @@ void Cramer_mp4() {
 	cout << "Training\n";
 	nn.TrainSample(train1);
 
-	nn.SetInputs(collapse(letterU));
+	nn.SetInputs(collapse(letterU,betterLetter));
 	cout << "Feeding U\n";
 	nn.FeedForward();
 	cout << "Setting results\n";
@@ -479,7 +500,7 @@ void Cramer_mp4() {
 	//*******************************
       
 	//Do a quick stocastic training
-	/*int NUMSAMPLES = 10000;
+	int NUMSAMPLES = 10000;
 	double threshold = 0.000001;
 	std::vector<double> thresh(NUMSAMPLES); // storage for thresholds
 	std::vector<double> err(NUMSAMPLES); // storage for sample error
@@ -487,41 +508,31 @@ void Cramer_mp4() {
 	for(;;) {
 		double avgErr = 0;
 
-		double i0 = gRandom->Uniform(-1,1);
-		double i1 = gRandom->Uniform(-1,1);
-		inputs[0] = i0;
-		inputs[1] = i1;
+		inputs = collapse(noisify(letterA,newLetter),betterLetter);
 		nn.SetInputs(inputs);
-		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
-		else train1[0] = -1.0;
+		train1[0] = 1.0;
+		train1[1] = 0.0;
+		train1[2] = 0.0; 
 		nn.TrainSample(train1);
 		avgErr += nn.GetSampleError(train1,inputs);
 
-		inputs[0] = -1.0*i0;
-		inputs[1] = i1;
+		inputs = collapse(noisify(letterC,newLetter),betterLetter);
 		nn.SetInputs(inputs);
-		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
-		else train1[0] = -1.0;
+		train1[0] = 0.0;
+		train1[1] = 1.0;
+		train1[2] = 0.0; 
 		nn.TrainSample(train1);
 		avgErr += nn.GetSampleError(train1,inputs);
 
-		inputs[0] = i0;
-		inputs[1] = -1.0*i1;
+		inputs = collapse(noisify(letterU,newLetter),betterLetter);
 		nn.SetInputs(inputs);
-		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
-		else train1[0] = -1.0;
+		train1[0] = 0.0;
+		train1[1] = 0.0;
+		train1[2] = 1.0; 
 		nn.TrainSample(train1);
 		avgErr += nn.GetSampleError(train1,inputs);
 
-		inputs[0] = -1.0*i0;
-		inputs[1] = -1.0*i1;
-		nn.SetInputs(inputs);
-		if(inputs[0]*inputs[1]<0) train1[0] = 1.0;
-		else train1[0] = -1.0;
-		nn.TrainSample(train1);
-		avgErr += nn.GetSampleError(train1,inputs);
-
-		avgErr /= 4;
+		avgErr /= 3;
 
 		thresh.push_back(nn.GetThreshold());
 		if (thresh.size() > NUMSAMPLES && err.size() > NUMSAMPLES) {
@@ -547,68 +558,141 @@ void Cramer_mp4() {
 		//nn.PrintWeights();
 		//nn.PrintNetwork();
 	}
-
+	
 	cout << "**** Done Training ********" << endl;
 	// copy and paste of plotting code below
 	nn.PrintWeights();
 	nn.PrintNetwork();
-	cout << inputs[0] << "\t" << inputs[1] << endl;
+	//cout << inputs[0] << "\t" << inputs[1] << endl;
 	
 	gStyle->SetPalette(1);
 	c1 = new TCanvas("c1", "Machine Problem 4",800,400);
-	c1->Divide(4,2);
+	c1->Divide(3,2);
 	// drawing stuff....need to figure it out
 	// histograms
-	TH1D * letter1 = 
-	for (int i = 0; i < nn.hid; i++) {
+	TH2D * h[4];
+	h[0] = new TH2D("h[0]","A",8, -1.5,1.5,8,-1.5,1.5);
+	h[1] = new TH2D("h[1]","C",8, -1.5,1.5,8,-1.5,1.5);
+	h[2] = new TH2D("h[2]","U",8, -1.5,1.5,8,-1.5,1.5);
+	h[3] = new TH2D("h[3]","Sample Noise on A", 8, -1.5, 1.5, 8, -1.5, 1.5);
+	double ** sampleNoise = noisifyTest(letterA);
+	for (int i = 0; i < 8; i++) {
+		for (int j = 0; j < 8; j++) {
+			h[0]->GetXaxis()->GetBinCenter(i+1);
+			h[0]->GetYaxis()->GetBinCenter(j+1);
+			h[0]->SetBinContent(i+1, j+1, letterA[i][j]);
+
+			h[1]->GetXaxis()->GetBinCenter(i+1);
+			h[1]->GetYaxis()->GetBinCenter(j+1);
+			h[1]->SetBinContent(i+1, j+1, letterC[i][j]);
+
+			h[2]->GetXaxis()->GetBinCenter(i+1);
+			h[2]->GetYaxis()->GetBinCenter(j+1);
+			h[2]->SetBinContent(i+1, j+1, letterU[i][j]);
+
+			h[3]->GetXaxis()->GetBinCenter(i+1);
+			h[3]->GetYaxis()->GetBinCenter(j+1);
+			h[3]->SetBinContent(i+1, j+1, sampleNoise[i][j]);
+		}
+	}
+
+	for (int i = 0; i < 3; i++) {
 		c1->cd(i+1);
 		h[i]->Draw("surf1");
-		gPad->SetTheta(60);
-		gPad->SetPhi(-45);
+		gPad->SetTheta(270);
+		gPad->SetPhi(-90);
 	}
-	
+
 	// graphs for learning curves
 	double * xaxis = new double[NUMSAMPLES];
 	for(int i=0; i<NUMSAMPLES; i++) xaxis[i]=i; // Make an x-axis for our graphs
 	TGraph* tgthr = new TGraph(NUMSAMPLES, xaxis, &thresh[0]);
 	TGraph* tgerr = new TGraph(NUMSAMPLES, xaxis, &err[0]);
-	c1->cd(7);  
+	c1->cd(4);  
 	gPad->SetLogy();
 	tgthr->SetTitle("Threshold");
 	tgthr->Draw("AL");
-	c1->cd(8);  
+	c1->cd(5);  
 	gPad->SetLogy();
 	tgerr->SetTitle("Error");
 	tgerr->SetLineColor(kBlue);
 	tgerr->Draw("AL");
 
-	c1->Update();
-	c1->Print("xor.gif");
+	c1->cd(6);
+	h[3]->Draw("surf1");
+	gPad->SetTheta(270);
+	gPad->SetPhi(-90);
 
-	// *** copy and paste of evaluation code below ***
-	//Error for 1000 samples
-	cout << "*** Testing 1000 samples..." << endl;
+	c1->Update();
+	c1->Print("OCR.gif");
+
+	cout << "*** Testing 1000 letter samples... ***" << endl;
 	int right = 0;
 	for (int i = 0; i < 1000; i++) {
-		double rand1 = 1;
-		do {
-			rand1 = gRandom->Uniform(-1,1);
-		} while(rand1 == 0);
-		double rand2 = 1;
-		do {
-			rand2 = gRandom->Uniform(-1,1);
-		} while(rand2 == 0);
-		double sol1 = (rand1*rand2 < 0)?1.0:-1.0;  // FIX - THIS HAD THE WRONG SIGNS!
-		double inputs1 [] = {rand1,rand2};
-		nn.SetInputs(inputs1);
+		inputs = collapse(noisify(letterA,newLetter),betterLetter);
+		nn.SetInputs(inputs);
 		nn.FeedForward();
-		if ((nn.GetResult() > 0 && sol1 > 0) || (nn.GetResult() < 0 && sol1 < 0)) {
+		if (nn.GetResult() == 0) {
 			right++;
 		} else {
-			cout << "\tWRONG: input_1: " << rand1 << " input_2: " << rand2 << " Solution: " << sol1 << " actual value: " << nn.GetResult() << endl;
+			cout << "WRONG: was given A, got: " << ((nn.GetResult() == 1)?"C":"U") << " instead";
+		}
+
+		inputs = collapse(noisify(letterC,newLetter),betterLetter);
+		nn.SetInputs(inputs);
+		nn.FeedForward();
+		if (nn.GetResult() == 1) {
+			right++;
+		} else {
+			cout << "WRONG: was given C, got: " << ((nn.GetResult() == 0)?"A":"U") << " instead";
+		}
+
+		inputs = collapse(noisify(letterU,newLetter),betterLetter);
+		nn.SetInputs(inputs);
+		nn.FeedForward();
+		if (nn.GetResult() == 2) {
+			right++;
+		} else {
+			cout << "WRONG: was given U, got: " << ((nn.GetResult() == 0)?"A":"C") << " instead";
 		}
 	}
-	cout << "Right: " << right << endl;
 
-	return;*/
+	cout << "Percentage right: " << ((right/3000)*100) << "%" << endl;
+	
+	TH2D * weights[hid];
+	for (int j = 0; j < hid; j++) {
+		char buff[100];
+		TString name("weights[");
+		name += j;
+		name += "]";
+		TString desc("weights for node Y_");
+		desc += (j+1);
+		weights[j] = new TH2D(name, desc, 8, -1.5, 1.5, 8, -1.5, 1.5);
+		for (int i = 1; i < in+1; i++) {
+			weights[j]->GetXaxis()->GetBinCenter(i);
+			weights[j]->GetYaxis()->GetBinCenter(j+1);
+			weights[j]->SetBinContent(i, j+1, nn.wji[j][i]);
+		}
+	}
+
+	TCanvas * wg[hid];
+	for (int i = 0; i < hid; i++) {
+		TString name("wg[");
+		name +=i;
+		name +="]";
+		TString desc("weight graph ");
+		desc += (i+1);
+		wg[i] = new TCanvas(name,desc,400,400);
+		weights[i]->Draw("surf1");
+		gPad->SetTheta(270);
+		gPad->SetPhi(-90);
+	}
+	
+	
+	delete []xaxis;
+	for (int i = 0; i < 8; i++) {
+		delete []sampleNoise[i];
+	}
+	delete []sampleNoise;
+	return;
 }
